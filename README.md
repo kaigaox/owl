@@ -1,7 +1,7 @@
 # Description
 **OWL: Open Wave Library for seismic wave modeling and full-waveform inversion**
 
-`OWL` is an open-source package written mostly in Fortran for seismic wave simulation and performing full-waveform inversion (FWI). It supports waveform modeling and FWI in the following types of media: 
+`OWL` is an open-source package for seismic wave simulation and full-waveform inversion (FWI) in the following types of media: 
 
 - 2D/3D isotropic acoustic media, with or without a flat acoustic free surface at the top. 
 - 2D/3D isotropic or simple anisotropic (see below for definition) elastic media, with or without a flat elastic free surface at the top. 
@@ -44,18 +44,18 @@ Algorithm features:
 - Built-in data processing and interpolation functionalities for automated modeling/FWI. 
 - User-friendly parameter input. 
 
-Currently, `OWL' does not yet support wave modeling or FWI in: 
+Currently, `OWL` does not yet support wave modeling or FWI in: 
 - Coupled acoustic-elastic media (i.e., coupled fluid and solid medium)
 - Visco-acoustic, visco-elastic media
 - Poro-elastic, poro-visco-elastic media
 - Thermoelastic media
 - Unstructured mesh as used FEM/SEM methods
 
-These features may be included in future development pending separate approval. 
+These features may be included in future development. 
 
 The work was supported by Los Alamos National Laboratory (LANL) Laboratory Directory Research and Development (LDRD) project 20240322ER. LANL is operated by Triad National Security, LLC, for the National Nuclear Security Administration (NNSA) of the U.S. Department of Energy (DOE) under Contract No. 89233218CNA000001. The research used high-performance computing resources provided by LANL's Institutional Computing program. 
 
-The work is under LANL open source approval reference O4921.
+The codes are released under LANL open source approval reference O4921.
 
 # Requirement
 `OWL` depends on [FLIT](https://github.com/lanl/flit).
@@ -81,16 +81,10 @@ cd src
 ruby install.rb clean
 ```
 
-We include several simple examples to use `OWL` in [example](example). To run the tests, 
-
-```
-cd test
-```
-
-and the scripts to reproduce the examples in the mansucript are contained in subfolders. 
+We also include several examples in the `example` directory. 
 
 # License
-&copy; 2025. Triad National Security, LLC. All rights reserved. 
+&copy; 2025-2026. Triad National Security, LLC. All rights reserved. 
 
 This program is Open-Source under the BSD-3 License.
 
@@ -112,7 +106,7 @@ We welcome feedback, bug reports, and improvement ideas on `OWL`.
 If you use this package in your research and find it useful, please cite it as
 
 * Kai Gao, 2025, OWL: Open Wave Library for seismic wave modeling and full-waveform inversion in acoustic and elastic media, url: [github.com/lanl/owl](https://github.com/lanl/owl)
-* Kai Gao, Jackson W. Saftner, Ting Chen, Ryan T. Modrak, 2025, OWL: Open Wave Library for seismic wave modeling and full-waveform inversion in acoustic and elastic media, _under review_ with GJI. 
+* Kai Gao, Jackson W. Saftner, Ting Chen, Ryan T. Modrak, 2026, OWL: Open Wave Library for seismic wave modeling and full-waveform inversion in acoustic and elastic media, _under review_ with GJI. 
 
 # Examples
 Below are some of the examples included in the under-review paper (LA-UR-26-20025). 
