@@ -157,6 +157,13 @@ module elastic_tti_2d_vars
     real :: topo_max
     real :: pmlvp
 
+    integer :: nc_mt
+
+    logical :: yn_grad_medium = .true.
+    logical :: yn_grad_source = .false.
+    real, allocatable, dimension(:, :) :: dstf_dt
+    real, allocatable, dimension(:) :: grad_mt
+
 contains
 
     !
@@ -258,6 +265,7 @@ contains
         real, allocatable, dimension(:, :) :: mdispersion, mstability, topo
         real, allocatable, dimension(:) :: stp, rtp
         real :: dz0
+        integer :: nbeg, nend
 
         nx = this%nx
         nz = this%nz
@@ -737,6 +745,30 @@ contains
         !            end do
         !        end do
         !        close(3)
+
+        ! If mt inversion is required
+        yn_grad_medium = this%yn_grad_medium
+        yn_grad_source = this%yn_grad_source
+
+        nc_mt = this%nc_mt
+        if (norm2(this%mt) > 0) then
+
+            dstf_dt = zeros(nt, sgmtr%ns)
+
+            do i = 1, sgmtr%ns
+                sgmtr%srcr(i)%mechanism = 'mt'
+                sgmtr%srcr(i)%moment_tensor(1, 1) = this%mt(1)
+                sgmtr%srcr(i)%moment_tensor(3, 3) = this%mt(3)
+                sgmtr%srcr(i)%moment_tensor(1, 3) = this%mt(5)
+
+                nbeg = nint(sgmtr%srcr(i)%t0/dt) + 1
+                nend = nbeg + sgmtr%srcr(i)%nt - 1
+                dstf_dt(nbeg:nend, i) = sgmtr%srcr(i)%stf
+                dstf_dt(:, i) = deriv(dstf_dt(:, i))
+
+            end do
+
+        end if
 
     end subroutine
 

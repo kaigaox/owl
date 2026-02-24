@@ -94,7 +94,7 @@ inc = $(base_inc) -I$(flitdir)/lib
 lflags = $(flitdir)/lib/libflit.a $(base_lflags)
 fflags = $(base_fflags) \
 	-D_dim2_ -D_fwi_ -D_fdorder16_ \
-	#-O0 -g -check bounds -fpe:0 -init=snan
+	# -O0 -g -check bounds -fpe:0 -init=snan
 
 # compile
 $(objdir)/c/%.o : $(PWD)/../../lib/%.f90

@@ -87,6 +87,7 @@ contains
         grad_c33 = zeros(nx, nz)
         grad_c55 = zeros(nx, nz)
         grad_rho = zeros(nx, nz)
+        grad_mt = zeros(nc_mt)
 
         energy_src_v = zeros(nx, nz)
         energy_rec_v = zeros(nx, nz)
@@ -258,6 +259,7 @@ contains
             ! Compute gradients
             if (mod(t, cc_step_interval) == 0) then
                 call compute_gradient
+                call compute_gradient_source(t)
             end if
 
             if (verbose .and. (mod(t, max(nint(nt/10.0), 1)) == 0 .or. t == 1 .or. t == nt)) then
@@ -280,7 +282,18 @@ contains
         ! Delete temporary files
         call close_boundary_saving(delete=.true.)
 
-        ! Output gradients
+        ! Output source parameter gradient
+        if (yn_grad_source) then
+            call grd%init(n=[nc_mt, 1], d=[1.0, 1.0], o=[0.0, 0.0])
+            grd%array = reshape(grad_mt, [nc_mt, 1])
+            call grd%output(tidy(dir_working)//'/shot_'//num2str(sgmtr%id)//'_grad_mt.grd')
+        end if
+
+        if (.not. yn_grad_medium) then
+            return
+        end if
+
+        ! Output medium parameter gradient
         if (yn_energy_precond) then
 
             if (kernel_v /= '') then
@@ -454,11 +467,18 @@ contains
 
     end subroutine
 
+    !
+    !> Compute medium parameter gradients
+    !
     subroutine compute_gradient
 
         integer :: i, j
         integer :: sgnh
         real :: tmpxx, tmpzz, tmpxz, tmpxxr, tmpzzr, tmpxzr
+
+        if (.not. yn_grad_medium) then
+            return
+        end if
 
         !$omp parallel do private(i, j, tmpxx, tmpzz, tmpxz, tmpxxr, tmpzzr, tmpxzr) collapse(2) schedule(auto)
         do j = -pml + 1, nz + pml
@@ -720,6 +740,48 @@ contains
             end if
 
         end if
+
+    end subroutine
+
+    !
+    !> Compute source parameter gradients
+    !
+    subroutine compute_gradient_source(t)
+
+        integer, intent(in) :: t
+
+        integer :: rgx, rgz, rhx, rhz
+        integer :: i, irx, irz
+
+        if (.not. yn_grad_source) then
+            return
+        end if
+
+        do i = 1, sgmtr%ns
+
+            rgx = sgmtr%srcr(i)%gx
+            rgz = sgmtr%srcr(i)%gz
+            rhx = sgmtr%srcr(i)%hx
+            rhz = sgmtr%srcr(i)%hz
+
+            do irz = -nkw, nkw
+                do irx = -nkw, nkw
+                    grad_mt(1) = grad_mt(1) - &
+                        stressxxr(rgx + irx, rgz + irz) &
+                        *sgmtr%srcr(i)%interp_ix(irx) &
+                        *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                    grad_mt(3) = grad_mt(3) - &
+                        stresszzr(rgx + irx, rgz + irz) &
+                        *sgmtr%srcr(i)%interp_ix(irx) &
+                        *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                    grad_mt(5) = grad_mt(5) - &
+                        stressxzr(rhx + irx, rhz + irz) &
+                        *sgmtr%srcr(i)%interp_hx(irx) &
+                        *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                end do
+            end do
+
+        end do
 
     end subroutine
 

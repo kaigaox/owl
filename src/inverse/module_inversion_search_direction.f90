@@ -367,26 +367,26 @@ contains
                     model_srch(i)%array = reshape(tmp, [nz, ny, nx])
 #endif
 
-                    !                case('sx', 'sy', 'sz', 'st0')
-                    !
-                    !                    ng = nr_virtual
-                    !                    tmp = zeros(ng)
-                    !
-                    !                    select case(model_search_method(i))
-                    !                        case ('SD', 'sd', 'steepest-descent')
-                    !                            tmp = -flatten(model_grad(i)%array)
-                    !                        case ('CG', 'cg', 'conjugate-gradient')
-                    !                            tmp = compute_search_direction_cg_single_parameter(model_name(i))
-                    !                        case ('L-BFGS', 'l-bfgs', 'l-BFGS')
-                    !                            tmp = compute_search_direction_lbfgs_single_parameter(model_name(i))
-                    !                    end select
-                    !
-                    !#ifdef _dim2_
-                    !                    model_srch(i)%array = reshape(tmp, [nr_virtual, 1])
-                    !#endif
-                    !#ifdef _dim3_
-                    !                    model_srch(i)%array = reshape(tmp, [nr_virtual, 1, 1])
-                    !#endif
+                case('mt')
+
+                    ng = nc_mt*ns
+                    tmp = zeros(ng)
+
+                    select case(model_search_method(i))
+                        case ('SD', 'sd', 'steepest-descent')
+                            tmp = -flatten(model_grad(i)%array)
+                        case ('CG', 'cg', 'conjugate-gradient')
+                            tmp = compute_search_direction_cg_single_parameter(model_name(i))
+                        case ('L-BFGS', 'l-bfgs', 'l-BFGS')
+                            tmp = compute_search_direction_lbfgs_single_parameter(model_name(i))
+                    end select
+
+#ifdef _dim2_
+                    model_srch(i)%array = reshape(tmp, [nc_mt, ns])
+#endif
+#ifdef _dim3_
+                    model_srch(i)%array = reshape(tmp, [nc_mt, ns, 1])
+#endif
 
             end select
 
@@ -408,19 +408,27 @@ contains
             ! Process search direction
             do i = 1, nmodel
 
-                ! Process search directions
-                if(yn_shared_model_processing) then
-                    call process_model_single_parameter(model_srch(i)%array, 'srch', param_name=model_m(i)%name)
-                else
-                    call process_model_single_parameter(model_srch(i)%array, 'srch_'//tidy(model_name(i)), param_name=model_m(i)%name)
-                end if
+                select case (model_name(i))
 
-                ! Re-save
-                if (rankid == 0) then
+                    case ('mt', 'stf')
 
-                    call output_array(model_srch(i)%array, dir_iter_model(iter)//'/srch_'//tidy(model_name(i))//'.bin')
+                    case default
 
-                end if
+                        ! Process search directions
+                        if(yn_shared_model_processing) then
+                            call process_model_single_parameter(model_srch(i)%array, 'srch', param_name=model_m(i)%name)
+                        else
+                            call process_model_single_parameter(model_srch(i)%array, 'srch_'//tidy(model_name(i)), param_name=model_m(i)%name)
+                        end if
+
+                        ! Re-save
+                        if (rankid == 0) then
+
+                            call output_array(model_srch(i)%array, dir_iter_model(iter)//'/srch_'//tidy(model_name(i))//'.bin')
+
+                        end if
+
+                end select
 
             end do
 

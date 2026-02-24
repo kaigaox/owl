@@ -349,6 +349,12 @@ module elastic_tti_3d_vars
     real :: topo_max
     integer, allocatable, dimension(:, :) :: trace_range
 
+    integer :: nc_mt
+    real, allocatable, dimension(:) :: grad_mt
+    logical :: yn_grad_medium = .true.
+    logical :: yn_grad_source = .false.
+    real, allocatable, dimension(:, :) :: dstf_dt
+
 contains
 
     !
@@ -461,6 +467,7 @@ contains
         real :: dz0
         real :: wmin, wmax
         real :: stable_eta_max, rayleigh_vs
+        integer :: nbeg, nend
 
         nx = this%nx
         ny = this%ny
@@ -1268,6 +1275,33 @@ contains
         yn_compx = this%compx
         yn_compy = this%compy
         yn_compz = this%compz
+
+        ! If mt inversion is required
+        yn_grad_medium = this%yn_grad_medium
+        yn_grad_source = this%yn_grad_source
+
+        nc_mt = this%nc_mt
+        if (norm2(this%mt) > 0) then
+
+            dstf_dt = zeros(nt, sgmtr%ns)
+
+            do i = 1, sgmtr%ns
+                sgmtr%srcr(i)%mechanism = 'mt'
+                sgmtr%srcr(i)%moment_tensor(1, 1) = this%mt(1)
+                sgmtr%srcr(i)%moment_tensor(2, 2) = this%mt(2)
+                sgmtr%srcr(i)%moment_tensor(3, 3) = this%mt(3)
+                sgmtr%srcr(i)%moment_tensor(1, 2) = this%mt(4)
+                sgmtr%srcr(i)%moment_tensor(1, 3) = this%mt(5)
+                sgmtr%srcr(i)%moment_tensor(2, 3) = this%mt(6)
+
+                nbeg = nint(sgmtr%srcr(i)%t0/dt) + 1
+                nend = nbeg + sgmtr%srcr(i)%nt - 1
+                dstf_dt(nbeg:nend, i) = sgmtr%srcr(i)%stf
+                dstf_dt(:, i) = deriv(dstf_dt(:, i))
+
+            end do
+
+        end if
 
         ! Split traces into group processes
         call alloc_array(trace_range, [0, nrank_group - 1, 1, 2])

@@ -118,6 +118,7 @@ contains
         grad_c55 = zeros(nx, ny, nz)
         grad_c66 = zeros(nx, ny, nz)
         grad_rho = zeros(nx, ny, nz)
+        grad_mt = zeros(nc_mt)
 
         energy_src_v = zeros(nx, ny, nz)
         energy_rec_v = zeros(nx, ny, nz)
@@ -407,6 +408,7 @@ contains
             ! Compute gradients
             if (mod(t, cc_step_interval) == 0) then
                 call compute_gradient
+                call compute_gradient_source(t)
             end if
 
             if (verbose .and. (mod(t, max(nint(nt/10.0), 1)) == 0 .or. t == 1 .or. t == nt)) then
@@ -443,7 +445,18 @@ contains
         ! Delete temporary files
         call close_boundary_saving(delete=.true.)
 
-        ! Output gradients
+        ! Output source parameter gradient
+        if (yn_grad_source) then
+            call grd%init(n=[nc_mt, 1, 1], d=[1.0, 1.0, 1.0], o=[0.0, 0.0, 0.0])
+            grd%array = reshape(grad_mt, [nc_mt, 1, 1])
+            call grd%output(tidy(dir_working)//'/shot_'//num2str(sgmtr%id)//'_grad_mt.grd')
+        end if
+
+        if (.not. yn_grad_medium) then
+            return
+        end if
+
+        ! Output medium parameter gradient
         if (yn_energy_precond) then
 
             call allreduce_array_group(grad_c11)
@@ -721,12 +734,19 @@ contains
 
     end subroutine
 
+    !
+    !> Compute medium parameter gradients
+    !
     subroutine compute_gradient
 
         integer :: i, j, k
         integer :: sgnh
         real :: tmpxx, tmpxy, tmpxz, tmpyy, tmpyz, tmpzz
         real :: tmpxxr, tmpxyr, tmpxzr, tmpyyr, tmpyzr, tmpzzr
+
+        if (.not. yn_grad_medium) then
+            return
+        end if
 
         !$omp parallel do private(i, j, k, tmpxx, tmpxy, tmpxz, tmpyy, tmpyz, tmpzz, &
             !$omp   tmpxxr, tmpxyr, tmpxzr, tmpyyr, tmpyzr, tmpzzr) collapse(3) schedule(auto)
@@ -1160,5 +1180,96 @@ contains
     end subroutine
 
 #include '../../lib/inc_directional_gradient.f90'
+
+    !
+    !> Compute source parameter gradients
+    !
+    subroutine compute_gradient_source(t)
+
+        integer, intent(in) :: t
+
+        integer :: sgx, sgy, sgz, irx, iry, irz
+        integer :: i
+
+        if (.not. yn_grad_source) then
+            return
+        end if
+
+        do i = 1, sgmtr%ns
+
+            sgx = sgmtr%srcr(i)%gx
+            sgy = sgmtr%srcr(i)%gy
+            sgz = sgmtr%srcr(i)%gz
+
+            do irz = -nkw, nkw
+                do iry = -nkw, nkw
+                    do irx = -nkw, nkw
+                        grad_mt(1) = grad_mt(1) - &
+                            stressxxr(sgx + irx, sgy + iry, sgz + irz) &
+                            *sgmtr%srcr(i)%interp_ix(irx) &
+                            *sgmtr%srcr(i)%interp_iy(iry) &
+                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                        grad_mt(2) = grad_mt(2) - &
+                            stressyyr(sgx + irx, sgy + iry, sgz + irz) &
+                            *sgmtr%srcr(i)%interp_ix(irx) &
+                            *sgmtr%srcr(i)%interp_iy(iry) &
+                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                        grad_mt(3) = grad_mt(3) - &
+                            stresszzr(sgx + irx, sgy + iry, sgz + irz) &
+                            *sgmtr%srcr(i)%interp_ix(irx) &
+                            *sgmtr%srcr(i)%interp_iy(iry) &
+                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                    end do
+                end do
+            end do
+
+            sgx = sgmtr%srcr(i)%hx
+            sgy = sgmtr%srcr(i)%hy
+            sgz = sgmtr%srcr(i)%gz
+            do irz = -nkw, nkw
+                do iry = -nkw, nkw
+                    do irx = -nkw, nkw
+                        grad_mt(4) = grad_mt(4) - &
+                            stressxy(sgx + irx, sgy + iry, sgz + irz) &
+                            *sgmtr%srcr(i)%interp_hx(irx) &
+                            *sgmtr%srcr(i)%interp_hy(iry) &
+                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                    end do
+                end do
+            end do
+
+            sgx = sgmtr%srcr(i)%hx
+            sgy = sgmtr%srcr(i)%gy
+            sgz = sgmtr%srcr(i)%hz
+            do irz = -nkw, nkw
+                do iry = -nkw, nkw
+                    do irx = -nkw, nkw
+                        grad_mt(5) = grad_mt(5) - &
+                            stressxz(sgx + irx, sgy + iry, sgz + irz) &
+                            *sgmtr%srcr(i)%interp_hx(irx) &
+                            *sgmtr%srcr(i)%interp_iy(iry) &
+                            *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                    end do
+                end do
+            end do
+
+            sgx = sgmtr%srcr(i)%gx
+            sgy = sgmtr%srcr(i)%hy
+            sgz = sgmtr%srcr(i)%hz
+            do irz = -nkw, nkw
+                do iry = -nkw, nkw
+                    do irx = -nkw, nkw
+                        grad_mt(6) = grad_mt(6) - &
+                            stressyz(sgx + irx, sgy + iry, sgz + irz) &
+                            *sgmtr%srcr(i)%interp_ix(irx) &
+                            *sgmtr%srcr(i)%interp_hy(iry) &
+                            *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                    end do
+                end do
+            end do
+
+        end do
+
+    end subroutine
 
 end submodule

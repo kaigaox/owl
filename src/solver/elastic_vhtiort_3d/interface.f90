@@ -65,6 +65,13 @@ module elastic_vhtiort_3d
         real :: free_surface_dz_refine = 4.0
         real :: dz_max = 0
 
+        integer :: nc_mt = 6
+        real, allocatable, dimension(:) :: mt
+        real, allocatable, dimension(:) :: stf
+
+        logical :: yn_grad_medium = .true.
+        logical :: yn_grad_source = .false.
+
     contains
 
         procedure, public :: forward => compute_forward

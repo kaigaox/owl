@@ -78,6 +78,13 @@ module elastic_tti_3d
 
         logical :: save_mesh = .false.
 
+        integer :: nc_mt = 6
+        real, allocatable, dimension(:) :: mt
+        real, allocatable, dimension(:) :: stf
+
+        logical :: yn_grad_medium = .true.
+        logical :: yn_grad_source = .false.
+
     contains
 
         procedure, public :: forward => compute_forward

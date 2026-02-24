@@ -185,33 +185,55 @@ contains
 
 #ifdef _dim2_
 
+    !
+    !> Get model or source parameters from meta arrays by name
+    !
     function get_model(name, default_value) result(v)
 
         character(len=*), intent(in) :: name
         real, intent(in), optional :: default_value
         real, allocatable, dimension(:, :) :: v
 
-        if (any(name == model_name)) then
-            v = get_meta_array_core(model_m, name)
-            v = v(shot_nzbeg:shot_nzend, shot_nxbeg:shot_nxend)
-        else if (any(name == model_name_aux)) then
-            v = get_meta_array_core(model_aux, name)
-            v = v(shot_nzbeg:shot_nzend, shot_nxbeg:shot_nxend)
-        else
-            if (.not. present(default_value)) then
-                if (rankid_group == 0) then
-                    write(error_unit, *) ' <get_model> Warning: default_value for '//tidy(name) &
-                        //' is not given; setting to zero. '
+        select case ('name')
+
+            case ('mt', 'stf')
+
+                if (any(name == model_name)) then
+                    v = get_meta_array_core(model_m, name)
+                else if (any(name == model_name_aux)) then
+                    v = get_meta_array_core(model_aux, name)
+                else
+                    v = zeros(nc_mt, ns)
                 end if
-            end if
-            v = zeros(shot_nz, shot_nx)
-            if (present(default_value)) then
-                v = v + default_value
-            end if
-        end if
+
+            case default
+
+                if (any(name == model_name)) then
+                    v = get_meta_array_core(model_m, name)
+                    v = v(shot_nzbeg:shot_nzend, shot_nxbeg:shot_nxend)
+                else if (any(name == model_name_aux)) then
+                    v = get_meta_array_core(model_aux, name)
+                    v = v(shot_nzbeg:shot_nzend, shot_nxbeg:shot_nxend)
+                else
+                    if (.not. present(default_value)) then
+                        if (rankid_group == 0) then
+                            write(error_unit, *) ' <get_model> Warning: Default_value for '//tidy(name) &
+                                //' not given; set to zero. '
+                        end if
+                    end if
+                    v = zeros(shot_nz, shot_nx)
+                    if (present(default_value)) then
+                        v = v + default_value
+                    end if
+                end if
+
+        end select
 
     end function
 
+    !
+    !> Get model or source parameters for inversion
+    !
     subroutine prepare_model_single_parameter(w, name, file_w, const, source, update)
 
         real, allocatable, dimension(:, :), intent(inout) :: w
@@ -225,36 +247,60 @@ contains
         character(len=1024) :: file_update
         real, allocatable, dimension(:, :) :: wt
 
-        w = zeros(nz, nx)
+        select case (name)
 
-        ! if read in or assign const value
-        if (present(file_w) .and. file_w /= '') then
+            case ('mt', 'stf')
 
-            if (require_model_interp) then
-                ! if it is necessary to resample
+                w = zeros(nc_mt, ns)
 
-                call alloc_array(wt, [1, nz0, 1, nx0])
-                call input_array(wt, file_w)
-                w = interp(wt, [nz0, nx0], [dz0, dx0], [oz0, ox0], &
-                    [nz, nx], [dz, dx], [oz, ox], ['linear', 'linear'])
-                deallocate (wt)
-
-            else
-                ! if not resampling required
-                call input_array(w, file_w)
-
-            end if
-
-        else
-            if (present(const)) then
-                w = const
-            end if
-            if (file_w == '') then
-                if (rankid == 0) then
-                    call warn(' Warning: Moodel '//tidy(name)//' is empty. ')
+                ! If read in or assign const value
+                if (present(file_w) .and. file_w /= '') then
+                    call input_array(w, file_w)
+                else
+                    if (present(const)) then
+                        w = const
+                    end if
+                    if (file_w == '') then
+                        if (rankid == 0) then
+                            call warn(' Warning: Moodel '//tidy(name)//' is empty. ')
+                        end if
+                    end if
                 end if
-            end if
-        end if
+
+            case default
+
+                w = zeros(nz, nx)
+
+                ! If read in or assign const value
+                if (present(file_w) .and. file_w /= '') then
+
+                    if (require_model_interp) then
+                        ! If it is necessary to resample
+
+                        call alloc_array(wt, [1, nz0, 1, nx0])
+                        call input_array(wt, file_w)
+                        w = interp(wt, [nz0, nx0], [dz0, dx0], [oz0, ox0], &
+                            [nz, nx], [dz, dx], [oz, ox], ['linear', 'linear'])
+                        deallocate (wt)
+
+                    else
+                        ! If resampling is not required
+                        call input_array(w, file_w)
+
+                    end if
+
+                else
+                    if (present(const)) then
+                        w = const
+                    end if
+                    if (file_w == '') then
+                        if (rankid == 0) then
+                            call warn(' Warning: Moodel '//tidy(name)//' is empty. ')
+                        end if
+                    end if
+                end if
+
+        end select
 
         ! If the source is given
         if (present(source)) then
@@ -298,24 +344,40 @@ contains
         real, intent(in), optional :: default_value
         real, allocatable, dimension(:, :, :) :: v
 
-        if (any(name == model_name)) then
-            v = get_meta_array_core(model_m, name)
-            v = v(shot_nzbeg:shot_nzend, shot_nybeg:shot_nyend, shot_nxbeg:shot_nxend)
-        else if (any(name == model_name_aux)) then
-            v = get_meta_array_core(model_aux, name)
-            v = v(shot_nzbeg:shot_nzend, shot_nybeg:shot_nyend, shot_nxbeg:shot_nxend)
-        else
-            if (.not. present(default_value)) then
-                if (rankid_group == 0) then
-                    write(error_unit, *) ' <get_model> Warning: default_value for '//tidy(name) &
-                        //' is not given; setting to zero. '
+        select case ('name')
+
+            case ('mt', 'stf')
+
+                if (any(name == model_name)) then
+                    v = get_meta_array_core(model_m, name)
+                else if (any(name == model_name_aux)) then
+                    v = get_meta_array_core(model_aux, name)
+                else
+                    v = zeros(nc_mt, ns, 1)
                 end if
-            end if
-            v = zeros(shot_nz, shot_ny, shot_nx)
-            if (present(default_value)) then
-                v = v + default_value
-            end if
-        end if
+
+            case default
+
+                if (any(name == model_name)) then
+                    v = get_meta_array_core(model_m, name)
+                    v = v(shot_nzbeg:shot_nzend, shot_nybeg:shot_nyend, shot_nxbeg:shot_nxend)
+                else if (any(name == model_name_aux)) then
+                    v = get_meta_array_core(model_aux, name)
+                    v = v(shot_nzbeg:shot_nzend, shot_nybeg:shot_nyend, shot_nxbeg:shot_nxend)
+                else
+                    if (.not. present(default_value)) then
+                        if (rankid_group == 0) then
+                            write(error_unit, *) ' <get_model> Warning: default_value for '//tidy(name) &
+                                //' is not given; setting to zero. '
+                        end if
+                    end if
+                    v = zeros(shot_nz, shot_ny, shot_nx)
+                    if (present(default_value)) then
+                        v = v + default_value
+                    end if
+                end if
+
+        end select
 
     end function
 
@@ -336,37 +398,62 @@ contains
 
         if (rankid == 0) then
 
-            w = zeros(nz, ny, nx)
+            select case (name)
 
-            ! if read in or assign const value
-            if (present(file_w) .and. file_w /= '') then
+                case ('mt', 'stf')
 
-                if (require_model_interp) then
-                    ! if it is necessary to resample
+                    w = zeros(nc_mt, ns, 1)
 
-                    call alloc_array(wt, [1, nz0, 1, ny0, 1, nx0])
-                    call input_array(wt, file_w)
-                    w = interp(wt, [nz0, ny0, nx0], [dz0, dy0, dx0], [oz0, oy0, ox0], &
-                        [nz, ny, nx], [dz, dy, dx], [oz, oy, ox], &
-                        ['linear', 'linear', 'linear'])
-                    deallocate (wt)
-
-                else
-                    ! if not resampling required
-                    call input_array(w, file_w)
-
-                end if
-
-            else
-                if (present(const)) then
-                    w = const
-                end if
-                if (file_w == '') then
-                    if (rankid == 0) then
-                        call warn(' Warning: Parameter '//tidy(name)//' is empty. ')
+                    ! If read in or assign const value
+                    if (present(file_w) .and. file_w /= '') then
+                        call input_array(w, file_w)
+                    else
+                        if (present(const)) then
+                            w = const
+                        end if
+                        if (file_w == '') then
+                            if (rankid == 0) then
+                                call warn(' Warning: Moodel '//tidy(name)//' is empty. ')
+                            end if
+                        end if
                     end if
-                end if
-            end if
+
+
+                case default
+
+                    w = zeros(nz, ny, nx)
+
+                    ! If read in or assign const value
+                    if (present(file_w) .and. file_w /= '') then
+
+                        if (require_model_interp) then
+                            ! If it is necessary to resample
+
+                            call alloc_array(wt, [1, nz0, 1, ny0, 1, nx0])
+                            call input_array(wt, file_w)
+                            w = interp(wt, [nz0, ny0, nx0], [dz0, dy0, dx0], [oz0, oy0, ox0], &
+                                [nz, ny, nx], [dz, dy, dx], [oz, oy, ox], &
+                                ['linear', 'linear', 'linear'])
+                            deallocate (wt)
+
+                        else
+                            ! If resampling is not required
+                            call input_array(w, file_w)
+
+                        end if
+
+                    else
+                        if (present(const)) then
+                            w = const
+                        end if
+                        if (file_w == '') then
+                            if (rankid == 0) then
+                                call warn(' Warning: Parameter '//tidy(name)//' is empty. ')
+                            end if
+                        end if
+                    end if
+
+            end select
 
             ! if assign a given source
             if (present(source)) then

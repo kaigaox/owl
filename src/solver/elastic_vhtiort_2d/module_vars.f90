@@ -82,6 +82,7 @@ module elastic_vhtiort_2d_vars
     real, allocatable, dimension(:, :) :: grad_vp, grad_vs, grad_rho
     real, allocatable, dimension(:, :) :: grad_epsilon, grad_delta, grad_eta
     real, allocatable, dimension(:, :) :: grad_c11, grad_c33, grad_c13, grad_c55
+    real, allocatable, dimension(:) :: grad_mt
 
     real, allocatable, dimension(:) :: snaps
 
@@ -126,6 +127,12 @@ module elastic_vhtiort_2d_vars
     real, allocatable, dimension(:) :: dz_scaling_i, dz_scaling_h
 
     real :: pmlvp
+
+    integer :: nc_mt
+
+    logical :: yn_grad_medium = .true.
+    logical :: yn_grad_source = .false.
+    real, allocatable, dimension(:, :) :: dstf_dt
 
 contains
 
@@ -209,6 +216,7 @@ contains
         integer :: i, j, l, refine_nz
         real :: rr, dz_max, rayleigh_wavelength
         real, allocatable, dimension(:, :) :: mdispersion, mstability
+        integer :: nbeg, nend
 
         ! Set model
         nx = this%nx
@@ -496,6 +504,30 @@ contains
 
         yn_compx = this%compx
         yn_compz = this%compz
+
+        ! If mt inversion is required
+        yn_grad_medium = this%yn_grad_medium
+        yn_grad_source = this%yn_grad_source
+
+        nc_mt = this%nc_mt
+        if (norm2(this%mt) > 0) then
+
+            dstf_dt = zeros(nt, sgmtr%ns)
+
+            do i = 1, sgmtr%ns
+                sgmtr%srcr(i)%mechanism = 'mt'
+                sgmtr%srcr(i)%moment_tensor(1, 1) = this%mt(1)
+                sgmtr%srcr(i)%moment_tensor(3, 3) = this%mt(3)
+                sgmtr%srcr(i)%moment_tensor(1, 3) = this%mt(5)
+
+                nbeg = nint(sgmtr%srcr(i)%t0/dt) + 1
+                nend = nbeg + sgmtr%srcr(i)%nt - 1
+                dstf_dt(nbeg:nend, i) = sgmtr%srcr(i)%stf
+                dstf_dt(:, i) = deriv(dstf_dt(:, i))
+
+            end do
+
+        end if
 
     end subroutine prepare_modeling
 

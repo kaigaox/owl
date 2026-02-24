@@ -238,20 +238,14 @@ contains
             select case (remove_string_after(model_name(i), ['c', 'C']))
                 case ('vp', 'vs', 'rho')
                     valstep = 100.0
-                case ('epsilon', 'delta', 'gamma', 'eps', 'del', 'gam')
+                case ('epsilon', 'delta', 'gamma', 'eta')
                     valstep = 0.1
+                case ('theta', 'phi')
+                    valstep = 0.1*const_pi_half
                 case ('c', 'C')
                     valstep = 1.0e9
-                case ('refl')
+                case ('mt')
                     valstep = 1.0
-                case ('sx')
-                    valstep = 0.1*(nx - 1)*dx
-                case ('sy')
-                    valstep = 0.1*(ny - 1)*dy
-                case ('sz')
-                    valstep = 0.1*(nz - 1)*dz
-                case ('st0')
-                    valstep = 0.1
             end select
 
             call readpar_xfloat(file_parameter, 'step_max_'//tidy(model_name(i)), model_step_max(i), valstep, iter*1.0)

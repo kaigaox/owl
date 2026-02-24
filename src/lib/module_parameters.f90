@@ -214,6 +214,9 @@ module mod_parameters
     !==========================================================================
     ! Inversion related
 
+    ! Six components in a moment tensor
+    integer :: nc_mt = 6
+
     ! Do wavefield cross-correlation every cc_step_interval steps
     integer :: cc_step_interval = 1
 
@@ -313,6 +316,9 @@ module mod_parameters
     real :: adam_eps = 1.0e-8
 
     integer :: htlen = 30
+
+    logical :: yn_grad_medium = .true.
+    logical :: yn_grad_source = .false.
 
 contains
 
@@ -645,6 +651,9 @@ contains
                 case ('qp', 'qs')
                     valmin = 10.0
                     valmax = float_large
+                case ('mt')
+                    valmin = -1.0e9
+                    valmax = 1.0e9
             end select
             call readpar_float(file_parameter, 'min_'//tidy(model_name(i)), model_min(i), valmin)
             call readpar_float(file_parameter, 'max_'//tidy(model_name(i)), model_max(i), valmax)
@@ -653,6 +662,18 @@ contains
             call readpar_string(file_parameter, 'search_method_'//tidy(model_name(i)), model_search_method(i), search_method)
 
         end do
+
+        if (any(model_name /= 'mt' .and. model_name /= 'stf')) then
+            yn_grad_medium = .true.
+        else
+            yn_grad_medium = .false.
+        end if
+
+        if (any(model_name == 'mt' .or. model_name == 'stf')) then
+            yn_grad_source = .true.
+        else
+            yn_grad_source = .false.
+        end if
 
 #endif
 

@@ -41,7 +41,12 @@ contains
         integer :: i
 
         do i = 1, nmodel
-            model_grad(i)%array = zeros(nz, ny, nx)
+            select case (model_name(i))
+                case default
+                    model_grad(i)%array = zeros(nz, ny, nx)
+                case ('mt')
+                    model_grad(i)%array = zeros(nc_mt, ns, 1)
+            end select
         end do
 
     end subroutine zero_gradient
@@ -53,6 +58,7 @@ contains
 
         character(len=1024) :: dir_field, dir_from, dir_to
         integer :: i
+        type(grid3) :: grd
         type(wave_solver_acoustic_iso_3d) :: solver_acoustic_iso
         type(wave_solver_elastic_vhtiort_3d) :: solver_elastic_vhtiort
         type(wave_solver_elastic_tti_3d) :: solver_elastic_tti
@@ -101,7 +107,7 @@ contains
 
         call mpibarrier
 
-        ! FWI gradient, shot paralellism with hybrid OpenMP + MPI
+        ! FWI gradient computation, shot paralellization with hybrid OpenMP + MPI for each shot
         do ishot = shot_in_group(groupid, 1), shot_in_group(groupid, 2)
 
             shot_prefix = tidy(dir_scratch)//'/shot_'//num2str(set_srcid(ishot))
@@ -172,6 +178,9 @@ contains
                     solver_elastic_vhtiort%compx = yn_compx
                     solver_elastic_vhtiort%compy = yn_compy
                     solver_elastic_vhtiort%compz = yn_compz
+                    solver_elastic_vhtiort%mt = slice(slice(get_model('mt', 0.0), dim=2, index=ishot), dim=2, index=1)
+                    solver_elastic_vhtiort%yn_grad_medium = yn_grad_medium
+                    solver_elastic_vhtiort%yn_grad_source = yn_grad_source
 
                     select case (aniso_param)
 
@@ -256,6 +265,9 @@ contains
                     solver_elastic_tti%compx = yn_compx
                     solver_elastic_tti%compy = yn_compy
                     solver_elastic_tti%compz = yn_compz
+                    solver_elastic_tti%mt = slice(slice(get_model('mt', 0.0), dim=2, index=ishot), dim=2, index=1)
+                    solver_elastic_tti%yn_grad_medium = yn_grad_medium
+                    solver_elastic_tti%yn_grad_source = yn_grad_source
 
                     select case (aniso_param)
 
@@ -424,15 +436,27 @@ contains
                     //' gradient computation completed. ')
             end if
 
-            do i = 1, nmodel
-                if (yn_shared_model_processing) then
-                    call process_model_single_shot(ishot, model_grad(i)%array, 'grad', &
-                        tidy(shot_prefix)//'_grad_'//tidy(model_name(i))//'.grd')
-                else
-                    call process_model_single_shot(ishot, model_grad(i)%array, 'grad_'//tidy(model_name(i)), &
-                        tidy(shot_prefix)//'_grad_'//tidy(model_name(i))//'.grd')
-                end if
-            end do
+            select case (model_name(i))
+
+                case ('mt', 'stf')
+
+                    call grd%input(tidy(shot_prefix)//'_grad_'//tidy(model_name(i))//'.grd')
+                    model_grad(i)%array = model_grad(i)%array + grd%array
+                    call warn(date_time_compact()//' Shot '//num2str(set_srcid(ishot))//' '//tidy(model_name(i))//' merged.')
+
+                case default
+
+                    do i = 1, nmodel
+                        if (yn_shared_model_processing) then
+                            call process_model_single_shot(ishot, model_grad(i)%array, 'grad', &
+                                tidy(shot_prefix)//'_grad_'//tidy(model_name(i))//'.grd')
+                        else
+                            call process_model_single_shot(ishot, model_grad(i)%array, 'grad_'//tidy(model_name(i)), &
+                                tidy(shot_prefix)//'_grad_'//tidy(model_name(i))//'.grd')
+                        end if
+                    end do
+
+            end select
 
             !            if (rankid_group == 0) then
             !                call execute_command_line('rm -rf '//tidy(shot_prefix)//'_*')
@@ -476,11 +500,26 @@ contains
         integer :: i
 
         do i = 1, nmodel
-            if (yn_shared_model_processing) then
-                call process_model_single_parameter(model_grad(i)%array, 'grad')
-            else
-                call process_model_single_parameter(model_grad(i)%array, 'grad_'//tidy(model_name(i)))
-            end if
+
+            select case (model_name(i))
+
+                case ('mt', 'stf')
+
+                    if (rankid == 0) then
+                        call warn(' Model value range = '//num2str(minval(model_grad(i)%array), '(es)') &
+                            //', '//num2str(maxval(model_grad(i)%array), '(es)'))
+                    end if
+
+                case default
+
+                    if (yn_shared_model_processing) then
+                        call process_model_single_parameter(model_grad(i)%array, 'grad')
+                    else
+                        call process_model_single_parameter(model_grad(i)%array, 'grad_'//tidy(model_name(i)))
+                    end if
+
+            end select
+
         end do
 
     end subroutine process_gradient
@@ -495,8 +534,7 @@ contains
         if (rankid == 0) then
 
             do i = 1, nmodel
-                call output_array(model_grad(i)%array, &
-                    dir_iter_model(iter)//'/grad_'//tidy(model_name(i))//'.bin')
+                call output_array(model_grad(i)%array, dir_iter_model(iter)//'/grad_'//tidy(model_name(i))//'.bin')
             end do
 
             call warn(date_time_compact()//' >>>>>>>>>> Gradient saved. ')
