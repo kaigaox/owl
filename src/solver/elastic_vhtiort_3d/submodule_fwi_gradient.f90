@@ -205,97 +205,101 @@ contains
         l = np
         do t = nt, sgmtr%srcr(1)%hnt, -1
 
-            ! -------------- Wavefield reconstruction ----------------------
-            ! Store previous stress wavefields for cross-correlation
-            prev_stressxx = stressxx
-            prev_stressyy = stressyy
-            prev_stresszz = stresszz
-            prev_stressyz = stressyz
-            prev_stressxz = stressxz
-            prev_stressxy = stressxy
-            prev_vx = vx
-            prev_vy = vy
-            prev_vz = vz
+            if (yn_grad_medium) then
 
-            ! -------------- Forward wavefield reconstruction -----------------------
-            if (yn_free_surface) then
-                call update_wavefield_free_surface(-dt, &
-                    stressxx, stressyy, stresszz, &
-                    stressyz, stressxz, stressxy, &
-                    vx, vy, vz, &
-                    memory_pdxxx, memory_pdyxy, memory_pdzxz, &
-                    memory_pdxxy, memory_pdyyy, memory_pdzyz, &
-                    memory_pdxxz, memory_pdyyz, memory_pdzzz, &
-                    memory_pdxvx, memory_pdyvx, memory_pdzvx, &
-                    memory_pdxvy, memory_pdyvy, memory_pdzvy, &
-                    memory_pdxvz, memory_pdyvz, memory_pdzvz)
-            else
-                call update_wavefield(-dt, &
-                    stressxx, stressyy, stresszz, &
-                    stressyz, stressxz, stressxy, &
-                    vx, vy, vz, &
-                    memory_pdxxx, memory_pdyxy, memory_pdzxz, &
-                    memory_pdxxy, memory_pdyyy, memory_pdzyz, &
-                    memory_pdxxz, memory_pdyyz, memory_pdzzz, &
-                    memory_pdxvx, memory_pdyvx, memory_pdzvx, &
-                    memory_pdxvy, memory_pdyvy, memory_pdzvy, &
-                    memory_pdxvz, memory_pdyvz, memory_pdzvz)
-            end if
+                ! -------------- Wavefield reconstruction ----------------------
+                ! Store previous stress wavefields for cross-correlation
+                prev_stressxx = stressxx
+                prev_stressyy = stressyy
+                prev_stresszz = stresszz
+                prev_stressyz = stressyz
+                prev_stressxz = stressxz
+                prev_stressxy = stressxy
+                prev_vx = vx
+                prev_vy = vy
+                prev_vz = vz
 
-            ! Read final step wavefield
-            if (t == nt) then
-                call input_final_step_wavefield
-            end if
+                ! -------------- Forward wavefield reconstruction -----------------------
+                if (yn_free_surface) then
+                    call update_wavefield_free_surface(-dt, &
+                        stressxx, stressyy, stresszz, &
+                        stressyz, stressxz, stressxy, &
+                        vx, vy, vz, &
+                        memory_pdxxx, memory_pdyxy, memory_pdzxz, &
+                        memory_pdxxy, memory_pdyyy, memory_pdzyz, &
+                        memory_pdxxz, memory_pdyyz, memory_pdzzz, &
+                        memory_pdxvx, memory_pdyvx, memory_pdzvx, &
+                        memory_pdxvy, memory_pdyvy, memory_pdzvy, &
+                        memory_pdxvz, memory_pdyvz, memory_pdzvz)
+                else
+                    call update_wavefield(-dt, &
+                        stressxx, stressyy, stresszz, &
+                        stressyz, stressxz, stressxy, &
+                        vx, vy, vz, &
+                        memory_pdxxx, memory_pdyxy, memory_pdzxz, &
+                        memory_pdxxy, memory_pdyyy, memory_pdzyz, &
+                        memory_pdxxz, memory_pdyyz, memory_pdzzz, &
+                        memory_pdxvx, memory_pdyvx, memory_pdzvx, &
+                        memory_pdxvy, memory_pdyvy, memory_pdzvy, &
+                        memory_pdxvz, memory_pdyvz, memory_pdzvz)
+                end if
 
-            ! Read boundary wavefield
-            call inject_boundary_wavefield(t)
+                ! Read final step wavefield
+                if (t == nt) then
+                    call input_final_step_wavefield
+                end if
 
-            ! Record wavefield snapshot if necessary
-            if (np /= 0 .and. l >= 1) then
-                if (t - 1 == nint(snaps(l)/dt)) then
+                ! Read boundary wavefield
+                call inject_boundary_wavefield(t)
 
-                    snapvx = 0
-                    snapvy = 0
-                    snapvz = 0
+                ! Record wavefield snapshot if necessary
+                if (np /= 0 .and. l >= 1) then
+                    if (t - 1 == nint(snaps(l)/dt)) then
 
-                    call commute_array_group(vx, fdhalf)
-                    call commute_array_group(vy, fdhalf)
-                    call commute_array_group(vz, fdhalf)
+                        snapvx = 0
+                        snapvy = 0
+                        snapvz = 0
 
-                    !$omp parallel do private(i, j, k) collapse(3)
-                    do k = nz1, nz2
-                        do j = ny1, ny2
-                            do i = nx1, nx2
-                                snapvx(i, j, k) = 0.5*sum(vx(i:i + 1, j, k))
-                                snapvy(i, j, k) = 0.5*sum(vy(i, j:j + 1, k))
-                                snapvz(i, j, k) = 0.5*sum(vz(i, j, k:k + 1))
+                        call commute_array_group(vx, fdhalf)
+                        call commute_array_group(vy, fdhalf)
+                        call commute_array_group(vz, fdhalf)
+
+                        !$omp parallel do private(i, j, k) collapse(3)
+                        do k = nz1, nz2
+                            do j = ny1, ny2
+                                do i = nx1, nx2
+                                    snapvx(i, j, k) = 0.5*sum(vx(i:i + 1, j, k))
+                                    snapvy(i, j, k) = 0.5*sum(vy(i, j:j + 1, k))
+                                    snapvz(i, j, k) = 0.5*sum(vz(i, j, k:k + 1))
+                                end do
                             end do
                         end do
-                    end do
-                    !$omp end parallel do
+                        !$omp end parallel do
 
-                    call reduce_array_group(snapvx)
-                    call reduce_array_group(snapvy)
-                    call reduce_array_group(snapvz)
+                        call reduce_array_group(snapvx)
+                        call reduce_array_group(snapvy)
+                        call reduce_array_group(snapvz)
 
-                    ! Output
-                    if (rankid_group == 0) then
-                        call output_array(snapvx(1:nx, 1:ny, 1:nz), tidy(dir_working)//'/shot_' &
-                            //num2str(sgmtr%id) &
-                            //'_reconstructed_wavefield_x_' &
-                            //num2str(l)//'.bin', store=321)
-                        call output_array(snapvy(1:nx, 1:ny, 1:nz), tidy(dir_working)//'/shot_' &
-                            //num2str(sgmtr%id) &
-                            //'_reconstructed_wavefield_y_' &
-                            //num2str(l)//'.bin', store=321)
-                        call output_array(snapvz(1:nx, 1:ny, 1:nz), tidy(dir_working)//'/shot_' &
-                            //num2str(sgmtr%id) &
-                            //'_reconstructed_wavefield_z_' &
-                            //num2str(l)//'.bin', store=321)
+                        ! Output
+                        if (rankid_group == 0) then
+                            call output_array(snapvx(1:nx, 1:ny, 1:nz), tidy(dir_working)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_x_' &
+                                //num2str(l)//'.bin', store=321)
+                            call output_array(snapvy(1:nx, 1:ny, 1:nz), tidy(dir_working)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_y_' &
+                                //num2str(l)//'.bin', store=321)
+                            call output_array(snapvz(1:nx, 1:ny, 1:nz), tidy(dir_working)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_z_' &
+                                //num2str(l)//'.bin', store=321)
+                        end if
+
+                        l = l - 1
                     end if
-
-                    l = l - 1
                 end if
+
             end if
 
             ! -------------- Adjoint wavefield reverse-time propagation ----------------------
@@ -447,10 +451,14 @@ contains
 
         ! Output source parameter gradient
         if (yn_grad_source) then
-            call grd%init(n=[nc_mt, 1, 1], d=[1.0, 1.0, 1.0], o=[0.0, 0.0, 0.0])
-            grd%array = reshape(grad_mt, [nc_mt, 1, 1])
-            call grd%output(tidy(dir_working)//'/shot_'//num2str(sgmtr%id)//'_grad_mt.grd')
+            call allreduce_array_group(grad_mt)
+            if (rankid_group == 0) then
+                call grd%init(n=[nc_mt, 1, 1], d=[1.0, 1.0, 1.0], o=[0.0, 0.0, 0.0])
+                grd%array = reshape(grad_mt, [nc_mt, 1, 1])
+                call grd%output(tidy(dir_working)//'/shot_'//num2str(sgmtr%id)//'_grad_mt.grd')
+            end if
         end if
+        call mpibarrier_group
 
         if (.not. yn_grad_medium) then
             return
@@ -1204,21 +1212,23 @@ contains
             do irz = -nkw, nkw
                 do iry = -nkw, nkw
                     do irx = -nkw, nkw
-                        grad_mt(1) = grad_mt(1) - &
-                            stressxxr(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_ix(irx) &
-                            *sgmtr%srcr(i)%interp_iy(iry) &
-                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
-                        grad_mt(2) = grad_mt(2) - &
-                            stressyyr(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_ix(irx) &
-                            *sgmtr%srcr(i)%interp_iy(iry) &
-                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
-                        grad_mt(3) = grad_mt(3) - &
-                            stresszzr(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_ix(irx) &
-                            *sgmtr%srcr(i)%interp_iy(iry) &
-                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                        if (is_in_block(sgx + irx, sgy + iry, sgz + irz) .and. ifelse(yn_free_surface, sgz + irz >= 2, .true.)) then
+                            grad_mt(1) = grad_mt(1) - &
+                                stressxxr(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_ix(irx) &
+                                *sgmtr%srcr(i)%interp_iy(iry) &
+                                *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                            grad_mt(2) = grad_mt(2) - &
+                                stressyyr(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_ix(irx) &
+                                *sgmtr%srcr(i)%interp_iy(iry) &
+                                *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                            grad_mt(3) = grad_mt(3) - &
+                                stresszzr(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_ix(irx) &
+                                *sgmtr%srcr(i)%interp_iy(iry) &
+                                *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                        end if
                     end do
                 end do
             end do
@@ -1229,11 +1239,13 @@ contains
             do irz = -nkw, nkw
                 do iry = -nkw, nkw
                     do irx = -nkw, nkw
-                        grad_mt(4) = grad_mt(4) - &
-                            stressxy(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_hx(irx) &
-                            *sgmtr%srcr(i)%interp_hy(iry) &
-                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                        if (is_in_block(sgx + irx, sgy + iry, sgz + irz) .and. ifelse(yn_free_surface, sgz + irz >= 2, .true.)) then
+                            grad_mt(4) = grad_mt(4) - &
+                                stressxyr(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_hx(irx) &
+                                *sgmtr%srcr(i)%interp_hy(iry) &
+                                *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                        end if
                     end do
                 end do
             end do
@@ -1244,11 +1256,13 @@ contains
             do irz = -nkw, nkw
                 do iry = -nkw, nkw
                     do irx = -nkw, nkw
-                        grad_mt(5) = grad_mt(5) - &
-                            stressxz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_hx(irx) &
-                            *sgmtr%srcr(i)%interp_iy(iry) &
-                            *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                        if (is_in_block(sgx + irx, sgy + iry, sgz + irz) .and. ifelse(yn_free_surface, sgz + irz >= 2, .true.)) then
+                            grad_mt(5) = grad_mt(5) - &
+                                stressxzr(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_hx(irx) &
+                                *sgmtr%srcr(i)%interp_iy(iry) &
+                                *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                        end if
                     end do
                 end do
             end do
@@ -1259,11 +1273,13 @@ contains
             do irz = -nkw, nkw
                 do iry = -nkw, nkw
                     do irx = -nkw, nkw
-                        grad_mt(6) = grad_mt(6) - &
-                            stressyz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_ix(irx) &
-                            *sgmtr%srcr(i)%interp_hy(iry) &
-                            *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                        if (is_in_block(sgx + irx, sgy + iry, sgz + irz) .and. ifelse(yn_free_surface, sgz + irz >= 2, .true.)) then
+                            grad_mt(6) = grad_mt(6) - &
+                                stressyzr(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_ix(irx) &
+                                *sgmtr%srcr(i)%interp_hy(iry) &
+                                *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                        end if
                     end do
                 end do
             end do

@@ -194,7 +194,7 @@ contains
         real, intent(in), optional :: default_value
         real, allocatable, dimension(:, :) :: v
 
-        select case ('name')
+        select case (name)
 
             case ('mt', 'stf')
 
@@ -344,7 +344,7 @@ contains
         real, intent(in), optional :: default_value
         real, allocatable, dimension(:, :, :) :: v
 
-        select case ('name')
+        select case (name)
 
             case ('mt', 'stf')
 

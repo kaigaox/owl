@@ -178,9 +178,13 @@ contains
                     solver_elastic_vhtiort%compx = yn_compx
                     solver_elastic_vhtiort%compy = yn_compy
                     solver_elastic_vhtiort%compz = yn_compz
-                    solver_elastic_vhtiort%mt = slice(slice(get_model('mt', 0.0), dim=2, index=ishot), dim=2, index=1)
                     solver_elastic_vhtiort%yn_grad_medium = yn_grad_medium
                     solver_elastic_vhtiort%yn_grad_source = yn_grad_source
+                    if (yn_grad_source) then
+                        solver_elastic_vhtiort%mt = flatten(slice(get_model('mt', 1.0), dim=2, index=ishot))
+                    else
+                        solver_elastic_vhtiort%mt = flatten(slice(get_model('mt', 0.0), dim=2, index=ishot))
+                    end if
 
                     select case (aniso_param)
 
@@ -265,9 +269,13 @@ contains
                     solver_elastic_tti%compx = yn_compx
                     solver_elastic_tti%compy = yn_compy
                     solver_elastic_tti%compz = yn_compz
-                    solver_elastic_tti%mt = slice(slice(get_model('mt', 0.0), dim=2, index=ishot), dim=2, index=1)
                     solver_elastic_tti%yn_grad_medium = yn_grad_medium
                     solver_elastic_tti%yn_grad_source = yn_grad_source
+                    if (yn_grad_source) then
+                        solver_elastic_tti%mt = flatten(slice(get_model('mt', 1.0), dim=2, index=ishot))
+                    else
+                        solver_elastic_tti%mt = flatten(slice(get_model('mt', 0.0), dim=2, index=ishot))
+                    end if
 
                     select case (aniso_param)
 
@@ -436,17 +444,21 @@ contains
                     //' gradient computation completed. ')
             end if
 
-            select case (model_name(i))
+            ! Process computed gradients
+            do i = 1, nmodel
 
-                case ('mt', 'stf')
+                select case (model_name(i))
 
-                    call grd%input(tidy(shot_prefix)//'_grad_'//tidy(model_name(i))//'.grd')
-                    model_grad(i)%array = model_grad(i)%array + grd%array
-                    call warn(date_time_compact()//' Shot '//num2str(set_srcid(ishot))//' '//tidy(model_name(i))//' merged.')
+                    case ('mt', 'stf')
 
-                case default
+                        call grd%input(tidy(shot_prefix)//'_grad_'//tidy(model_name(i))//'.grd')
+                        model_grad(i)%array = model_grad(i)%array + grd%array
+                        if (rankid_group == 0) then
+                            call warn(date_time_compact()//' Shot '//num2str(set_srcid(ishot))//' '//tidy(model_name(i))//' merged.')
+                        end if
 
-                    do i = 1, nmodel
+                    case default
+
                         if (yn_shared_model_processing) then
                             call process_model_single_shot(ishot, model_grad(i)%array, 'grad', &
                                 tidy(shot_prefix)//'_grad_'//tidy(model_name(i))//'.grd')
@@ -454,9 +466,10 @@ contains
                             call process_model_single_shot(ishot, model_grad(i)%array, 'grad_'//tidy(model_name(i)), &
                                 tidy(shot_prefix)//'_grad_'//tidy(model_name(i))//'.grd')
                         end if
-                    end do
 
-            end select
+                end select
+
+            end do
 
             !            if (rankid_group == 0) then
             !                call execute_command_line('rm -rf '//tidy(shot_prefix)//'_*')

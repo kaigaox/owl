@@ -174,9 +174,13 @@ contains
                     solver_elastic_vhtiort%reconstruct = yn_reconstruct
                     solver_elastic_vhtiort%compx = yn_compx
                     solver_elastic_vhtiort%compz = yn_compz
-                    solver_elastic_vhtiort%mt = slice(get_model('mt', 0.0), dim=2, index=ishot)
                     solver_elastic_vhtiort%yn_grad_medium = yn_grad_medium
                     solver_elastic_vhtiort%yn_grad_source = yn_grad_source
+                    if (yn_grad_source) then
+                        solver_elastic_vhtiort%mt = slice(get_model('mt', 1.0), dim=2, index=ishot)
+                    else
+                        solver_elastic_vhtiort%mt = slice(get_model('mt', 0.0), dim=2, index=ishot)
+                    end if
 
                     select case (aniso_param)
 
@@ -248,9 +252,13 @@ contains
                     solver_elastic_tti%reconstruct = yn_reconstruct
                     solver_elastic_tti%compx = yn_compx
                     solver_elastic_tti%compz = yn_compz
-                    solver_elastic_tti%mt = slice(get_model('mt', 0.0), dim=2, index=ishot)
                     solver_elastic_tti%yn_grad_medium = yn_grad_medium
                     solver_elastic_tti%yn_grad_source = yn_grad_source
+                    if (yn_grad_source) then
+                        solver_elastic_tti%mt = slice(get_model('mt', 1.0), dim=2, index=ishot)
+                    else
+                        solver_elastic_tti%mt = slice(get_model('mt', 0.0), dim=2, index=ishot)
+                    end if
 
                     select case (aniso_param)
 

@@ -132,64 +132,68 @@ contains
         call alloc_array(p_udsh, [1, nz], pad=pml)
         call alloc_array(p_udrh, [1, nz], pad=pml)
 
-        ! prepare boundary saving
+        ! Prepare boundary saving
         call prepare_boundary_saving
         call open_boundary_saving
 
         l = np
         do t = nt, sgmtr%srcr(1)%hnt, -1
 
-            prev_stressxx = stressxx
-            prev_stresszz = stresszz
-            prev_stressxz = stressxz
-            prev_vx = vx
-            prev_vz = vz
+            if (yn_grad_medium) then
 
-            ! -------------- Forward wavefield reconstruction -----------------------
-            if (yn_free_surface) then
-                call update_wavefield_free_surface(-dt, &
-                    stressxx, stresszz, stressxz, vx, vz, &
-                    memory_pdxvx, memory_pdzvx, memory_pdxvz, memory_pdzvz, &
-                    memory_pdxxx, memory_pdzxz, memory_pdxxz, memory_pdzzz)
-            else
-                call update_wavefield(-dt, &
-                    stressxx, stresszz, stressxz, vx, vz, &
-                    memory_pdxvx, memory_pdzvx, memory_pdxvz, memory_pdzvz, &
-                    memory_pdxxx, memory_pdzxz, memory_pdxxz, memory_pdzzz)
-            end if
+                prev_stressxx = stressxx
+                prev_stresszz = stresszz
+                prev_stressxz = stressxz
+                prev_vx = vx
+                prev_vz = vz
 
-            ! Read final step wavefield
-            if (t == nt) then
-                call input_final_step_wavefield
-            end if
-
-            ! Read boundary wavefield
-            call inject_boundary_wavefield(t)
-
-            ! Record wavefield snapshot if necessary
-            if (np /= 0 .and. l >= 1) then
-                if (t - 1 == nint(snaps(l)/dt)) then
-
-                    !$omp parallel do private(i, j) collapse(2)
-                    do j = 1, nz
-                        do i = 1, nx
-                            snapvx(i, j) = 0.5*sum(vx(i:i + 1, j))
-                            snapvz(i, j) = 0.5*sum(vz(i, j:j + 1))
-                        end do
-                    end do
-                    !$omp end parallel do
-
-                    call output_array(snapvx(1:nx, 1:nz), tidy(dir_working)//'/shot_' &
-                        //num2str(sgmtr%id) &
-                        //'_reconstructed_wavefield_x_' &
-                        //num2str(l)//'.bin', transp=.true.)
-                    call output_array(snapvz(1:nx, 1:nz), tidy(dir_working)//'/shot_' &
-                        //num2str(sgmtr%id) &
-                        //'_reconstructed_wavefield_z_' &
-                        //num2str(l)//'.bin', transp=.true.)
-
-                    l = l - 1
+                ! -------------- Forward wavefield reconstruction -----------------------
+                if (yn_free_surface) then
+                    call update_wavefield_free_surface(-dt, &
+                        stressxx, stresszz, stressxz, vx, vz, &
+                        memory_pdxvx, memory_pdzvx, memory_pdxvz, memory_pdzvz, &
+                        memory_pdxxx, memory_pdzxz, memory_pdxxz, memory_pdzzz)
+                else
+                    call update_wavefield(-dt, &
+                        stressxx, stresszz, stressxz, vx, vz, &
+                        memory_pdxvx, memory_pdzvx, memory_pdxvz, memory_pdzvz, &
+                        memory_pdxxx, memory_pdzxz, memory_pdxxz, memory_pdzzz)
                 end if
+
+                ! Read final step wavefield
+                if (t == nt) then
+                    call input_final_step_wavefield
+                end if
+
+                ! Read boundary wavefield
+                call inject_boundary_wavefield(t)
+
+                ! Record wavefield snapshot if necessary
+                if (np /= 0 .and. l >= 1) then
+                    if (t - 1 == nint(snaps(l)/dt)) then
+
+                        !$omp parallel do private(i, j) collapse(2)
+                        do j = 1, nz
+                            do i = 1, nx
+                                snapvx(i, j) = 0.5*sum(vx(i:i + 1, j))
+                                snapvz(i, j) = 0.5*sum(vz(i, j:j + 1))
+                            end do
+                        end do
+                        !$omp end parallel do
+
+                        call output_array(snapvx(1:nx, 1:nz), tidy(dir_working)//'/shot_' &
+                            //num2str(sgmtr%id) &
+                            //'_reconstructed_wavefield_x_' &
+                            //num2str(l)//'.bin', transp=.true.)
+                        call output_array(snapvz(1:nx, 1:nz), tidy(dir_working)//'/shot_' &
+                            //num2str(sgmtr%id) &
+                            //'_reconstructed_wavefield_z_' &
+                            //num2str(l)//'.bin', transp=.true.)
+
+                        l = l - 1
+                    end if
+                end if
+
             end if
 
             ! -------------- Adjoint wavefield backward propagation -----------------------

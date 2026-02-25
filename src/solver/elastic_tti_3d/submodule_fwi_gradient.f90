@@ -268,393 +268,397 @@ contains
         l = np
         do t = nt, sgmtr%srcr(1)%hnt, -1
 
-            ! -------------- Wavefield reconstruction ----------------------
-            ! Store previous stress wavefields for cross-correlation
-            !$omp parallel do private(i, j, k) collapse(3)
-            do k = nz1, nz2
-                do j = ny1, ny2
-                    do i = nx1, nx2
-                        prev_stressxx(i, j, k) = &
-                            stressxx_ixiyiz(i, j, k) &
-                            + 0.25*sum(stressxx_hxhyiz(i:i + 1, j:j + 1, k)) &
-                            + 0.25*sum(stressxx_hxiyhz(i:i + 1, j, k:k + 1)) &
-                            + 0.25*sum(stressxx_ixhyhz(i, j:j + 1, k:k + 1))
-                        prev_stressyy(i, j, k) = &
-                            stressyy_ixiyiz(i, j, k) &
-                            + 0.25*sum(stressyy_hxhyiz(i:i + 1, j:j + 1, k)) &
-                            + 0.25*sum(stressyy_hxiyhz(i:i + 1, j, k:k + 1)) &
-                            + 0.25*sum(stressyy_ixhyhz(i, j:j + 1, k:k + 1))
-                        prev_stresszz(i, j, k) = &
-                            stresszz_ixiyiz(i, j, k) &
-                            + 0.25*sum(stresszz_hxhyiz(i:i + 1, j:j + 1, k)) &
-                            + 0.25*sum(stresszz_hxiyhz(i:i + 1, j, k:k + 1)) &
-                            + 0.25*sum(stresszz_ixhyhz(i, j:j + 1, k:k + 1))
-                        prev_stressyz(i, j, k) = &
-                            stressyz_ixiyiz(i, j, k) &
-                            + 0.25*sum(stressyz_hxhyiz(i:i + 1, j:j + 1, k)) &
-                            + 0.25*sum(stressyz_hxiyhz(i:i + 1, j, k:k + 1)) &
-                            + 0.25*sum(stressyz_ixhyhz(i, j:j + 1, k:k + 1))
-                        prev_stressxz(i, j, k) = &
-                            stressxz_ixiyiz(i, j, k) &
-                            + 0.25*sum(stressxz_hxhyiz(i:i + 1, j:j + 1, k)) &
-                            + 0.25*sum(stressxz_hxiyhz(i:i + 1, j, k:k + 1)) &
-                            + 0.25*sum(stressxz_ixhyhz(i, j:j + 1, k:k + 1))
-                        prev_stressxy(i, j, k) = &
-                            stressxy_ixiyiz(i, j, k) &
-                            + 0.25*sum(stressxy_hxhyiz(i:i + 1, j:j + 1, k)) &
-                            + 0.25*sum(stressxy_hxiyhz(i:i + 1, j, k:k + 1)) &
-                            + 0.25*sum(stressxy_ixhyhz(i, j:j + 1, k:k + 1))
-                        prev_vx(i, j, k) = &
-                            0.5*sum(vx_hxiyiz(i:i + 1, j, k)) &
-                            + 0.5*sum(vx_ixhyiz(i, j:j + 1, k)) &
-                            + 0.5*sum(vx_ixiyhz(i, j, k:k + 1)) &
-                            + 0.125*sum(vx_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
-                        prev_vy(i, j, k) = &
-                            0.5*sum(vy_hxiyiz(i:i + 1, j, k)) &
-                            + 0.5*sum(vy_ixhyiz(i, j:j + 1, k)) &
-                            + 0.5*sum(vy_ixiyhz(i, j, k:k + 1)) &
-                            + 0.125*sum(vy_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
-                        prev_vz(i, j, k) = &
-                            0.5*sum(vz_hxiyiz(i:i + 1, j, k)) &
-                            + 0.5*sum(vz_ixhyiz(i, j:j + 1, k)) &
-                            + 0.5*sum(vz_ixiyhz(i, j, k:k + 1)) &
-                            + 0.125*sum(vz_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
+            if (yn_grad_medium) then
+
+                ! -------------- Wavefield reconstruction ----------------------
+                ! Store previous stress wavefields for cross-correlation
+                !$omp parallel do private(i, j, k) collapse(3)
+                do k = nz1, nz2
+                    do j = ny1, ny2
+                        do i = nx1, nx2
+                            prev_stressxx(i, j, k) = &
+                                stressxx_ixiyiz(i, j, k) &
+                                + 0.25*sum(stressxx_hxhyiz(i:i + 1, j:j + 1, k)) &
+                                + 0.25*sum(stressxx_hxiyhz(i:i + 1, j, k:k + 1)) &
+                                + 0.25*sum(stressxx_ixhyhz(i, j:j + 1, k:k + 1))
+                            prev_stressyy(i, j, k) = &
+                                stressyy_ixiyiz(i, j, k) &
+                                + 0.25*sum(stressyy_hxhyiz(i:i + 1, j:j + 1, k)) &
+                                + 0.25*sum(stressyy_hxiyhz(i:i + 1, j, k:k + 1)) &
+                                + 0.25*sum(stressyy_ixhyhz(i, j:j + 1, k:k + 1))
+                            prev_stresszz(i, j, k) = &
+                                stresszz_ixiyiz(i, j, k) &
+                                + 0.25*sum(stresszz_hxhyiz(i:i + 1, j:j + 1, k)) &
+                                + 0.25*sum(stresszz_hxiyhz(i:i + 1, j, k:k + 1)) &
+                                + 0.25*sum(stresszz_ixhyhz(i, j:j + 1, k:k + 1))
+                            prev_stressyz(i, j, k) = &
+                                stressyz_ixiyiz(i, j, k) &
+                                + 0.25*sum(stressyz_hxhyiz(i:i + 1, j:j + 1, k)) &
+                                + 0.25*sum(stressyz_hxiyhz(i:i + 1, j, k:k + 1)) &
+                                + 0.25*sum(stressyz_ixhyhz(i, j:j + 1, k:k + 1))
+                            prev_stressxz(i, j, k) = &
+                                stressxz_ixiyiz(i, j, k) &
+                                + 0.25*sum(stressxz_hxhyiz(i:i + 1, j:j + 1, k)) &
+                                + 0.25*sum(stressxz_hxiyhz(i:i + 1, j, k:k + 1)) &
+                                + 0.25*sum(stressxz_ixhyhz(i, j:j + 1, k:k + 1))
+                            prev_stressxy(i, j, k) = &
+                                stressxy_ixiyiz(i, j, k) &
+                                + 0.25*sum(stressxy_hxhyiz(i:i + 1, j:j + 1, k)) &
+                                + 0.25*sum(stressxy_hxiyhz(i:i + 1, j, k:k + 1)) &
+                                + 0.25*sum(stressxy_ixhyhz(i, j:j + 1, k:k + 1))
+                            prev_vx(i, j, k) = &
+                                0.5*sum(vx_hxiyiz(i:i + 1, j, k)) &
+                                + 0.5*sum(vx_ixhyiz(i, j:j + 1, k)) &
+                                + 0.5*sum(vx_ixiyhz(i, j, k:k + 1)) &
+                                + 0.125*sum(vx_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
+                            prev_vy(i, j, k) = &
+                                0.5*sum(vy_hxiyiz(i:i + 1, j, k)) &
+                                + 0.5*sum(vy_ixhyiz(i, j:j + 1, k)) &
+                                + 0.5*sum(vy_ixiyhz(i, j, k:k + 1)) &
+                                + 0.125*sum(vy_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
+                            prev_vz(i, j, k) = &
+                                0.5*sum(vz_hxiyiz(i:i + 1, j, k)) &
+                                + 0.5*sum(vz_ixhyiz(i, j:j + 1, k)) &
+                                + 0.5*sum(vz_ixiyhz(i, j, k:k + 1)) &
+                                + 0.125*sum(vz_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
+                        end do
                     end do
                 end do
-            end do
-            !$omp end parallel do
+                !$omp end parallel do
 
-            ! -------------- Forward wavefield reconstruction -----------------------
-            if (yn_free_surface) then
-                call update_wavefield_free_surface(-dt, &
-                    stressxx_ixiyiz, stressyy_ixiyiz, stresszz_ixiyiz, &
-                    stressxy_ixiyiz, stressxz_ixiyiz, stressyz_ixiyiz, &
-                    memory_pdxvx_ixiyiz, &
-                    memory_pdxvy_ixiyiz, &
-                    memory_pdxvz_ixiyiz, &
-                    memory_pdyvx_ixiyiz, &
-                    memory_pdyvy_ixiyiz, &
-                    memory_pdyvz_ixiyiz, &
-                    memory_pdzvx_ixiyiz, &
-                    memory_pdzvy_ixiyiz, &
-                    memory_pdzvz_ixiyiz, &
-                    stressxx_hxhyiz, stressyy_hxhyiz, stresszz_hxhyiz, &
-                    stressxy_hxhyiz, stressxz_hxhyiz, stressyz_hxhyiz, &
-                    memory_pdxvx_hxhyiz, &
-                    memory_pdxvy_hxhyiz, &
-                    memory_pdxvz_hxhyiz, &
-                    memory_pdyvx_hxhyiz, &
-                    memory_pdyvy_hxhyiz, &
-                    memory_pdyvz_hxhyiz, &
-                    memory_pdzvx_hxhyiz, &
-                    memory_pdzvy_hxhyiz, &
-                    memory_pdzvz_hxhyiz, &
-                    stressxx_hxiyhz, stressyy_hxiyhz, stresszz_hxiyhz, &
-                    stressxy_hxiyhz, stressxz_hxiyhz, stressyz_hxiyhz, &
-                    memory_pdxvx_hxiyhz, &
-                    memory_pdxvy_hxiyhz, &
-                    memory_pdxvz_hxiyhz, &
-                    memory_pdyvx_hxiyhz, &
-                    memory_pdyvy_hxiyhz, &
-                    memory_pdyvz_hxiyhz, &
-                    memory_pdzvx_hxiyhz, &
-                    memory_pdzvy_hxiyhz, &
-                    memory_pdzvz_hxiyhz, &
-                    stressxx_ixhyhz, stressyy_ixhyhz, stresszz_ixhyhz, &
-                    stressxy_ixhyhz, stressxz_ixhyhz, stressyz_ixhyhz, &
-                    memory_pdxvx_ixhyhz, &
-                    memory_pdxvy_ixhyhz, &
-                    memory_pdxvz_ixhyhz, &
-                    memory_pdyvx_ixhyhz, &
-                    memory_pdyvy_ixhyhz, &
-                    memory_pdyvz_ixhyhz, &
-                    memory_pdzvx_ixhyhz, &
-                    memory_pdzvy_ixhyhz, &
-                    memory_pdzvz_ixhyhz, &
-                    vx_hxiyiz, vy_hxiyiz, vz_hxiyiz, &
-                    memory_pdxxx_hxiyiz, &
-                    memory_pdxxy_hxiyiz, &
-                    memory_pdxxz_hxiyiz, &
-                    memory_pdyxy_hxiyiz, &
-                    memory_pdyyy_hxiyiz, &
-                    memory_pdyyz_hxiyiz, &
-                    memory_pdzxx_hxiyiz, memory_pdzxy_hxiyiz, memory_pdzxz_hxiyiz, &
-                    memory_pdzyy_hxiyiz, memory_pdzyz_hxiyiz, &
-                    memory_pdzzz_hxiyiz, &
-                    vx_ixhyiz, vy_ixhyiz, vz_ixhyiz, &
-                    memory_pdxxx_ixhyiz, &
-                    memory_pdxxy_ixhyiz, &
-                    memory_pdxxz_ixhyiz, &
-                    memory_pdyxy_ixhyiz, &
-                    memory_pdyyy_ixhyiz, &
-                    memory_pdyyz_ixhyiz, &
-                    memory_pdzxx_ixhyiz, memory_pdzxy_ixhyiz, memory_pdzxz_ixhyiz, &
-                    memory_pdzyy_ixhyiz, memory_pdzyz_ixhyiz, &
-                    memory_pdzzz_ixhyiz, &
-                    vx_ixiyhz, vy_ixiyhz, vz_ixiyhz, &
-                    memory_pdxxx_ixiyhz, &
-                    memory_pdxxy_ixiyhz, &
-                    memory_pdxxz_ixiyhz, &
-                    memory_pdyxy_ixiyhz, &
-                    memory_pdyyy_ixiyhz, &
-                    memory_pdyyz_ixiyhz, &
-                    memory_pdzxx_ixiyhz, memory_pdzxy_ixiyhz, memory_pdzxz_ixiyhz, &
-                    memory_pdzyy_ixiyhz, memory_pdzyz_ixiyhz, &
-                    memory_pdzzz_ixiyhz, &
-                    vx_hxhyhz, vy_hxhyhz, vz_hxhyhz, &
-                    memory_pdxxx_hxhyhz, &
-                    memory_pdxxy_hxhyhz, &
-                    memory_pdxxz_hxhyhz, &
-                    memory_pdyxy_hxhyhz, &
-                    memory_pdyyy_hxhyhz, &
-                    memory_pdyyz_hxhyhz, &
-                    memory_pdzxx_hxhyhz, memory_pdzxy_hxhyhz, memory_pdzxz_hxhyhz, &
-                    memory_pdzyy_hxhyhz, memory_pdzyz_hxhyhz, &
-                    memory_pdzzz_hxhyhz)
-            else
-                call update_wavefield(-dt, &
-                    stressxx_ixiyiz, stressyy_ixiyiz, stresszz_ixiyiz, &
-                    stressxy_ixiyiz, stressxz_ixiyiz, stressyz_ixiyiz, &
-                    memory_pdxvx_ixiyiz, &
-                    memory_pdxvy_ixiyiz, &
-                    memory_pdxvz_ixiyiz, &
-                    memory_pdyvx_ixiyiz, &
-                    memory_pdyvy_ixiyiz, &
-                    memory_pdyvz_ixiyiz, &
-                    memory_pdzvx_ixiyiz, &
-                    memory_pdzvy_ixiyiz, &
-                    memory_pdzvz_ixiyiz, &
-                    stressxx_hxhyiz, stressyy_hxhyiz, stresszz_hxhyiz, &
-                    stressxy_hxhyiz, stressxz_hxhyiz, stressyz_hxhyiz, &
-                    memory_pdxvx_hxhyiz, &
-                    memory_pdxvy_hxhyiz, &
-                    memory_pdxvz_hxhyiz, &
-                    memory_pdyvx_hxhyiz, &
-                    memory_pdyvy_hxhyiz, &
-                    memory_pdyvz_hxhyiz, &
-                    memory_pdzvx_hxhyiz, &
-                    memory_pdzvy_hxhyiz, &
-                    memory_pdzvz_hxhyiz, &
-                    stressxx_hxiyhz, stressyy_hxiyhz, stresszz_hxiyhz, &
-                    stressxy_hxiyhz, stressxz_hxiyhz, stressyz_hxiyhz, &
-                    memory_pdxvx_hxiyhz, &
-                    memory_pdxvy_hxiyhz, &
-                    memory_pdxvz_hxiyhz, &
-                    memory_pdyvx_hxiyhz, &
-                    memory_pdyvy_hxiyhz, &
-                    memory_pdyvz_hxiyhz, &
-                    memory_pdzvx_hxiyhz, &
-                    memory_pdzvy_hxiyhz, &
-                    memory_pdzvz_hxiyhz, &
-                    stressxx_ixhyhz, stressyy_ixhyhz, stresszz_ixhyhz, &
-                    stressxy_ixhyhz, stressxz_ixhyhz, stressyz_ixhyhz, &
-                    memory_pdxvx_ixhyhz, &
-                    memory_pdxvy_ixhyhz, &
-                    memory_pdxvz_ixhyhz, &
-                    memory_pdyvx_ixhyhz, &
-                    memory_pdyvy_ixhyhz, &
-                    memory_pdyvz_ixhyhz, &
-                    memory_pdzvx_ixhyhz, &
-                    memory_pdzvy_ixhyhz, &
-                    memory_pdzvz_ixhyhz, &
-                    vx_hxiyiz, vy_hxiyiz, vz_hxiyiz, &
-                    memory_pdxxx_hxiyiz, &
-                    memory_pdxxy_hxiyiz, &
-                    memory_pdxxz_hxiyiz, &
-                    memory_pdyxy_hxiyiz, &
-                    memory_pdyyy_hxiyiz, &
-                    memory_pdyyz_hxiyiz, &
-                    memory_pdzxz_hxiyiz, &
-                    memory_pdzyz_hxiyiz, &
-                    memory_pdzzz_hxiyiz, &
-                    vx_ixhyiz, vy_ixhyiz, vz_ixhyiz, &
-                    memory_pdxxx_ixhyiz, &
-                    memory_pdxxy_ixhyiz, &
-                    memory_pdxxz_ixhyiz, &
-                    memory_pdyxy_ixhyiz, &
-                    memory_pdyyy_ixhyiz, &
-                    memory_pdyyz_ixhyiz, &
-                    memory_pdzxz_ixhyiz, &
-                    memory_pdzyz_ixhyiz, &
-                    memory_pdzzz_ixhyiz, &
-                    vx_ixiyhz, vy_ixiyhz, vz_ixiyhz, &
-                    memory_pdxxx_ixiyhz, &
-                    memory_pdxxy_ixiyhz, &
-                    memory_pdxxz_ixiyhz, &
-                    memory_pdyxy_ixiyhz, &
-                    memory_pdyyy_ixiyhz, &
-                    memory_pdyyz_ixiyhz, &
-                    memory_pdzxz_ixiyhz, &
-                    memory_pdzyz_ixiyhz, &
-                    memory_pdzzz_ixiyhz, &
-                    vx_hxhyhz, vy_hxhyhz, vz_hxhyhz, &
-                    memory_pdxxx_hxhyhz, &
-                    memory_pdxxy_hxhyhz, &
-                    memory_pdxxz_hxhyhz, &
-                    memory_pdyxy_hxhyhz, &
-                    memory_pdyyy_hxhyhz, &
-                    memory_pdyyz_hxhyhz, &
-                    memory_pdzxz_hxhyhz, &
-                    memory_pdzyz_hxhyhz, &
-                    memory_pdzzz_hxhyhz)
-            end if
+                ! -------------- Forward wavefield reconstruction -----------------------
+                if (yn_free_surface) then
+                    call update_wavefield_free_surface(-dt, &
+                        stressxx_ixiyiz, stressyy_ixiyiz, stresszz_ixiyiz, &
+                        stressxy_ixiyiz, stressxz_ixiyiz, stressyz_ixiyiz, &
+                        memory_pdxvx_ixiyiz, &
+                        memory_pdxvy_ixiyiz, &
+                        memory_pdxvz_ixiyiz, &
+                        memory_pdyvx_ixiyiz, &
+                        memory_pdyvy_ixiyiz, &
+                        memory_pdyvz_ixiyiz, &
+                        memory_pdzvx_ixiyiz, &
+                        memory_pdzvy_ixiyiz, &
+                        memory_pdzvz_ixiyiz, &
+                        stressxx_hxhyiz, stressyy_hxhyiz, stresszz_hxhyiz, &
+                        stressxy_hxhyiz, stressxz_hxhyiz, stressyz_hxhyiz, &
+                        memory_pdxvx_hxhyiz, &
+                        memory_pdxvy_hxhyiz, &
+                        memory_pdxvz_hxhyiz, &
+                        memory_pdyvx_hxhyiz, &
+                        memory_pdyvy_hxhyiz, &
+                        memory_pdyvz_hxhyiz, &
+                        memory_pdzvx_hxhyiz, &
+                        memory_pdzvy_hxhyiz, &
+                        memory_pdzvz_hxhyiz, &
+                        stressxx_hxiyhz, stressyy_hxiyhz, stresszz_hxiyhz, &
+                        stressxy_hxiyhz, stressxz_hxiyhz, stressyz_hxiyhz, &
+                        memory_pdxvx_hxiyhz, &
+                        memory_pdxvy_hxiyhz, &
+                        memory_pdxvz_hxiyhz, &
+                        memory_pdyvx_hxiyhz, &
+                        memory_pdyvy_hxiyhz, &
+                        memory_pdyvz_hxiyhz, &
+                        memory_pdzvx_hxiyhz, &
+                        memory_pdzvy_hxiyhz, &
+                        memory_pdzvz_hxiyhz, &
+                        stressxx_ixhyhz, stressyy_ixhyhz, stresszz_ixhyhz, &
+                        stressxy_ixhyhz, stressxz_ixhyhz, stressyz_ixhyhz, &
+                        memory_pdxvx_ixhyhz, &
+                        memory_pdxvy_ixhyhz, &
+                        memory_pdxvz_ixhyhz, &
+                        memory_pdyvx_ixhyhz, &
+                        memory_pdyvy_ixhyhz, &
+                        memory_pdyvz_ixhyhz, &
+                        memory_pdzvx_ixhyhz, &
+                        memory_pdzvy_ixhyhz, &
+                        memory_pdzvz_ixhyhz, &
+                        vx_hxiyiz, vy_hxiyiz, vz_hxiyiz, &
+                        memory_pdxxx_hxiyiz, &
+                        memory_pdxxy_hxiyiz, &
+                        memory_pdxxz_hxiyiz, &
+                        memory_pdyxy_hxiyiz, &
+                        memory_pdyyy_hxiyiz, &
+                        memory_pdyyz_hxiyiz, &
+                        memory_pdzxx_hxiyiz, memory_pdzxy_hxiyiz, memory_pdzxz_hxiyiz, &
+                        memory_pdzyy_hxiyiz, memory_pdzyz_hxiyiz, &
+                        memory_pdzzz_hxiyiz, &
+                        vx_ixhyiz, vy_ixhyiz, vz_ixhyiz, &
+                        memory_pdxxx_ixhyiz, &
+                        memory_pdxxy_ixhyiz, &
+                        memory_pdxxz_ixhyiz, &
+                        memory_pdyxy_ixhyiz, &
+                        memory_pdyyy_ixhyiz, &
+                        memory_pdyyz_ixhyiz, &
+                        memory_pdzxx_ixhyiz, memory_pdzxy_ixhyiz, memory_pdzxz_ixhyiz, &
+                        memory_pdzyy_ixhyiz, memory_pdzyz_ixhyiz, &
+                        memory_pdzzz_ixhyiz, &
+                        vx_ixiyhz, vy_ixiyhz, vz_ixiyhz, &
+                        memory_pdxxx_ixiyhz, &
+                        memory_pdxxy_ixiyhz, &
+                        memory_pdxxz_ixiyhz, &
+                        memory_pdyxy_ixiyhz, &
+                        memory_pdyyy_ixiyhz, &
+                        memory_pdyyz_ixiyhz, &
+                        memory_pdzxx_ixiyhz, memory_pdzxy_ixiyhz, memory_pdzxz_ixiyhz, &
+                        memory_pdzyy_ixiyhz, memory_pdzyz_ixiyhz, &
+                        memory_pdzzz_ixiyhz, &
+                        vx_hxhyhz, vy_hxhyhz, vz_hxhyhz, &
+                        memory_pdxxx_hxhyhz, &
+                        memory_pdxxy_hxhyhz, &
+                        memory_pdxxz_hxhyhz, &
+                        memory_pdyxy_hxhyhz, &
+                        memory_pdyyy_hxhyhz, &
+                        memory_pdyyz_hxhyhz, &
+                        memory_pdzxx_hxhyhz, memory_pdzxy_hxhyhz, memory_pdzxz_hxhyhz, &
+                        memory_pdzyy_hxhyhz, memory_pdzyz_hxhyhz, &
+                        memory_pdzzz_hxhyhz)
+                else
+                    call update_wavefield(-dt, &
+                        stressxx_ixiyiz, stressyy_ixiyiz, stresszz_ixiyiz, &
+                        stressxy_ixiyiz, stressxz_ixiyiz, stressyz_ixiyiz, &
+                        memory_pdxvx_ixiyiz, &
+                        memory_pdxvy_ixiyiz, &
+                        memory_pdxvz_ixiyiz, &
+                        memory_pdyvx_ixiyiz, &
+                        memory_pdyvy_ixiyiz, &
+                        memory_pdyvz_ixiyiz, &
+                        memory_pdzvx_ixiyiz, &
+                        memory_pdzvy_ixiyiz, &
+                        memory_pdzvz_ixiyiz, &
+                        stressxx_hxhyiz, stressyy_hxhyiz, stresszz_hxhyiz, &
+                        stressxy_hxhyiz, stressxz_hxhyiz, stressyz_hxhyiz, &
+                        memory_pdxvx_hxhyiz, &
+                        memory_pdxvy_hxhyiz, &
+                        memory_pdxvz_hxhyiz, &
+                        memory_pdyvx_hxhyiz, &
+                        memory_pdyvy_hxhyiz, &
+                        memory_pdyvz_hxhyiz, &
+                        memory_pdzvx_hxhyiz, &
+                        memory_pdzvy_hxhyiz, &
+                        memory_pdzvz_hxhyiz, &
+                        stressxx_hxiyhz, stressyy_hxiyhz, stresszz_hxiyhz, &
+                        stressxy_hxiyhz, stressxz_hxiyhz, stressyz_hxiyhz, &
+                        memory_pdxvx_hxiyhz, &
+                        memory_pdxvy_hxiyhz, &
+                        memory_pdxvz_hxiyhz, &
+                        memory_pdyvx_hxiyhz, &
+                        memory_pdyvy_hxiyhz, &
+                        memory_pdyvz_hxiyhz, &
+                        memory_pdzvx_hxiyhz, &
+                        memory_pdzvy_hxiyhz, &
+                        memory_pdzvz_hxiyhz, &
+                        stressxx_ixhyhz, stressyy_ixhyhz, stresszz_ixhyhz, &
+                        stressxy_ixhyhz, stressxz_ixhyhz, stressyz_ixhyhz, &
+                        memory_pdxvx_ixhyhz, &
+                        memory_pdxvy_ixhyhz, &
+                        memory_pdxvz_ixhyhz, &
+                        memory_pdyvx_ixhyhz, &
+                        memory_pdyvy_ixhyhz, &
+                        memory_pdyvz_ixhyhz, &
+                        memory_pdzvx_ixhyhz, &
+                        memory_pdzvy_ixhyhz, &
+                        memory_pdzvz_ixhyhz, &
+                        vx_hxiyiz, vy_hxiyiz, vz_hxiyiz, &
+                        memory_pdxxx_hxiyiz, &
+                        memory_pdxxy_hxiyiz, &
+                        memory_pdxxz_hxiyiz, &
+                        memory_pdyxy_hxiyiz, &
+                        memory_pdyyy_hxiyiz, &
+                        memory_pdyyz_hxiyiz, &
+                        memory_pdzxz_hxiyiz, &
+                        memory_pdzyz_hxiyiz, &
+                        memory_pdzzz_hxiyiz, &
+                        vx_ixhyiz, vy_ixhyiz, vz_ixhyiz, &
+                        memory_pdxxx_ixhyiz, &
+                        memory_pdxxy_ixhyiz, &
+                        memory_pdxxz_ixhyiz, &
+                        memory_pdyxy_ixhyiz, &
+                        memory_pdyyy_ixhyiz, &
+                        memory_pdyyz_ixhyiz, &
+                        memory_pdzxz_ixhyiz, &
+                        memory_pdzyz_ixhyiz, &
+                        memory_pdzzz_ixhyiz, &
+                        vx_ixiyhz, vy_ixiyhz, vz_ixiyhz, &
+                        memory_pdxxx_ixiyhz, &
+                        memory_pdxxy_ixiyhz, &
+                        memory_pdxxz_ixiyhz, &
+                        memory_pdyxy_ixiyhz, &
+                        memory_pdyyy_ixiyhz, &
+                        memory_pdyyz_ixiyhz, &
+                        memory_pdzxz_ixiyhz, &
+                        memory_pdzyz_ixiyhz, &
+                        memory_pdzzz_ixiyhz, &
+                        vx_hxhyhz, vy_hxhyhz, vz_hxhyhz, &
+                        memory_pdxxx_hxhyhz, &
+                        memory_pdxxy_hxhyhz, &
+                        memory_pdxxz_hxhyhz, &
+                        memory_pdyxy_hxhyhz, &
+                        memory_pdyyy_hxhyhz, &
+                        memory_pdyyz_hxhyhz, &
+                        memory_pdzxz_hxhyhz, &
+                        memory_pdzyz_hxhyhz, &
+                        memory_pdzzz_hxhyhz)
+                end if
 
-            ! Read final step wavefield
-            if (t == nt) then
-                call input_final_step_wavefield
-            end if
+                ! Read final step wavefield
+                if (t == nt) then
+                    call input_final_step_wavefield
+                end if
 
-            ! Read boundary wavefield
-            call inject_boundary_wavefield(t)
+                ! Read boundary wavefield
+                call inject_boundary_wavefield(t)
 
-            ! Record wavefield snapshot if necessary
-            if (np /= 0 .and. l <= np) then
-                if (t - 1 == nint(snaps(l)/dt)) then
+                ! Record wavefield snapshot if necessary
+                if (np /= 0 .and. l <= np) then
+                    if (t - 1 == nint(snaps(l)/dt)) then
 
-                    call commute_array_group(vx_hxiyiz, fdhalf)
-                    call commute_array_group(vy_hxiyiz, fdhalf)
-                    call commute_array_group(vz_hxiyiz, fdhalf)
-                    call commute_array_group(vx_ixhyiz, fdhalf)
-                    call commute_array_group(vy_ixhyiz, fdhalf)
-                    call commute_array_group(vz_ixhyiz, fdhalf)
-                    call commute_array_group(vx_ixiyhz, fdhalf)
-                    call commute_array_group(vy_ixiyhz, fdhalf)
-                    call commute_array_group(vz_ixiyhz, fdhalf)
-                    call commute_array_group(vx_hxhyhz, fdhalf)
-                    call commute_array_group(vy_hxhyhz, fdhalf)
-                    call commute_array_group(vz_hxhyhz, fdhalf)
+                        call commute_array_group(vx_hxiyiz, fdhalf)
+                        call commute_array_group(vy_hxiyiz, fdhalf)
+                        call commute_array_group(vz_hxiyiz, fdhalf)
+                        call commute_array_group(vx_ixhyiz, fdhalf)
+                        call commute_array_group(vy_ixhyiz, fdhalf)
+                        call commute_array_group(vz_ixhyiz, fdhalf)
+                        call commute_array_group(vx_ixiyhz, fdhalf)
+                        call commute_array_group(vy_ixiyhz, fdhalf)
+                        call commute_array_group(vz_ixiyhz, fdhalf)
+                        call commute_array_group(vx_hxhyhz, fdhalf)
+                        call commute_array_group(vy_hxhyhz, fdhalf)
+                        call commute_array_group(vz_hxhyhz, fdhalf)
 
-                    if (yn_free_surface) then
+                        if (yn_free_surface) then
 
-                        call alloc_array(snapvx, [1, nx, 1, ny, 1, nz], pad=pml)
-                        call alloc_array(snapvy, [1, nx, 1, ny, 1, nz], pad=pml)
-                        call alloc_array(snapvz, [1, nx, 1, ny, 1, nz], pad=pml)
+                            call alloc_array(snapvx, [1, nx, 1, ny, 1, nz], pad=pml)
+                            call alloc_array(snapvy, [1, nx, 1, ny, 1, nz], pad=pml)
+                            call alloc_array(snapvz, [1, nx, 1, ny, 1, nz], pad=pml)
 
-                        !$omp parallel do private(i, j, k) collapse(3)
-                        do k = nz1, nz2
-                            do j = ny1, ny2
-                                do i = nx1, nx2
-                                    snapvx(i, j, k) = &
-                                        0.5*sum(vx_hxiyiz(i:i + 1, j, k)) &
-                                        + 0.5*sum(vx_ixhyiz(i, j:j + 1, k)) &
-                                        + 0.5*sum(vx_ixiyhz(i, j, k:k + 1)) &
-                                        + 0.125*sum(vx_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
-                                    snapvy(i, j, k) = &
-                                        0.5*sum(vy_hxiyiz(i:i + 1, j, k)) &
-                                        + 0.5*sum(vy_ixhyiz(i, j:j + 1, k)) &
-                                        + 0.5*sum(vy_ixiyhz(i, j, k:k + 1)) &
-                                        + 0.125*sum(vy_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
-                                    snapvz(i, j, k) = &
-                                        0.5*sum(vz_hxiyiz(i:i + 1, j, k)) &
-                                        + 0.5*sum(vz_ixhyiz(i, j:j + 1, k)) &
-                                        + 0.5*sum(vz_ixiyhz(i, j, k:k + 1)) &
-                                        + 0.125*sum(vz_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
-                                end do
-                            end do
-                        end do
-                        !$omp end parallel do
-
-                        call reduce_array_group(snapvx)
-                        call reduce_array_group(snapvy)
-                        call reduce_array_group(snapvz)
-
-                        snapvx = 0.25*snapvx
-                        snapvy = 0.25*snapvy
-                        snapvz = 0.25*snapvz
-
-                        if (rankid_group == 0) then
-
-                            open(3, file=tidy(dir_snapshot)//'/shot_' &
-                                //num2str(sgmtr%id) &
-                                //'_reconstructed_wavefield_' &
-                                //num2str(l)//'.txt')
-                            do i = -pml + 1, nx + pml
-                                do j = -pml + 1, ny + pml
-                                    do k = 1, nz + pml
-                                        write(3, '(6es)') (i - 1)*dx + ox, (j - 1)*dy + oy, zz_i(i, j, k), &
-                                            snapvx(i, j, k), snapvy(i, j, k), snapvz(i, j, k)
+                            !$omp parallel do private(i, j, k) collapse(3)
+                            do k = nz1, nz2
+                                do j = ny1, ny2
+                                    do i = nx1, nx2
+                                        snapvx(i, j, k) = &
+                                            0.5*sum(vx_hxiyiz(i:i + 1, j, k)) &
+                                            + 0.5*sum(vx_ixhyiz(i, j:j + 1, k)) &
+                                            + 0.5*sum(vx_ixiyhz(i, j, k:k + 1)) &
+                                            + 0.125*sum(vx_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
+                                        snapvy(i, j, k) = &
+                                            0.5*sum(vy_hxiyiz(i:i + 1, j, k)) &
+                                            + 0.5*sum(vy_ixhyiz(i, j:j + 1, k)) &
+                                            + 0.5*sum(vy_ixiyhz(i, j, k:k + 1)) &
+                                            + 0.125*sum(vy_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
+                                        snapvz(i, j, k) = &
+                                            0.5*sum(vz_hxiyiz(i:i + 1, j, k)) &
+                                            + 0.5*sum(vz_ixhyiz(i, j:j + 1, k)) &
+                                            + 0.5*sum(vz_ixiyhz(i, j, k:k + 1)) &
+                                            + 0.125*sum(vz_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
                                     end do
                                 end do
                             end do
-                            close(3)
+                            !$omp end parallel do
 
-                            call map_irregular_to_regular(snapvx, this, [1, this%nx, 1, this%ny, 1, this%nz])
-                            call map_irregular_to_regular(snapvy, this, [1, this%nx, 1, this%ny, 1, this%nz])
-                            call map_irregular_to_regular(snapvz, this, [1, this%nx, 1, this%ny, 1, this%nz])
+                            call reduce_array_group(snapvx)
+                            call reduce_array_group(snapvy)
+                            call reduce_array_group(snapvz)
 
-                            call output_array(snapvx, tidy(dir_snapshot)//'/shot_' &
-                                //num2str(sgmtr%id) &
-                                //'_reconstructed_wavefield_x_' &
-                                //num2str(l)//'.bin', store=321)
-                            call output_array(snapvy, tidy(dir_snapshot)//'/shot_' &
-                                //num2str(sgmtr%id) &
-                                //'_reconstructed_wavefield_y_' &
-                                //num2str(l)//'.bin', store=321)
-                            call output_array(snapvz, tidy(dir_snapshot)//'/shot_' &
-                                //num2str(sgmtr%id) &
-                                //'_reconstructed_wavefield_z_' &
-                                //num2str(l)//'.bin', store=321)
+                            snapvx = 0.25*snapvx
+                            snapvy = 0.25*snapvy
+                            snapvz = 0.25*snapvz
 
-                        end if
+                            if (rankid_group == 0) then
 
-                    else
+                                open(3, file=tidy(dir_snapshot)//'/shot_' &
+                                    //num2str(sgmtr%id) &
+                                    //'_reconstructed_wavefield_' &
+                                    //num2str(l)//'.txt')
+                                do i = -pml + 1, nx + pml
+                                    do j = -pml + 1, ny + pml
+                                        do k = 1, nz + pml
+                                            write(3, '(6es)') (i - 1)*dx + ox, (j - 1)*dy + oy, zz_i(i, j, k), &
+                                                snapvx(i, j, k), snapvy(i, j, k), snapvz(i, j, k)
+                                        end do
+                                    end do
+                                end do
+                                close(3)
 
-                        snapvx = 0.0
-                        snapvy = 0.0
-                        snapvz = 0.0
+                                call map_irregular_to_regular(snapvx, this, [1, this%nx, 1, this%ny, 1, this%nz])
+                                call map_irregular_to_regular(snapvy, this, [1, this%nx, 1, this%ny, 1, this%nz])
+                                call map_irregular_to_regular(snapvz, this, [1, this%nx, 1, this%ny, 1, this%nz])
 
-                        !$omp parallel do private(i, j, k) collapse(3)
-                        do k = nz1, nz2
-                            do j = ny1, ny2
-                                do i = nx1, nx2
-                                    snapvx(i, j, k) = &
-                                        0.5*sum(vx_hxiyiz(i:i + 1, j, k)) &
-                                        + 0.5*sum(vx_ixhyiz(i, j:j + 1, k)) &
-                                        + 0.5*sum(vx_ixiyhz(i, j, k:k + 1)) &
-                                        + 0.125*sum(vx_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
-                                    snapvy(i, j, k) = &
-                                        0.5*sum(vy_hxiyiz(i:i + 1, j, k)) &
-                                        + 0.5*sum(vy_ixhyiz(i, j:j + 1, k)) &
-                                        + 0.5*sum(vy_ixiyhz(i, j, k:k + 1)) &
-                                        + 0.125*sum(vy_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
-                                    snapvz(i, j, k) = &
-                                        0.5*sum(vz_hxiyiz(i:i + 1, j, k)) &
-                                        + 0.5*sum(vz_ixhyiz(i, j:j + 1, k)) &
-                                        + 0.5*sum(vz_ixiyhz(i, j, k:k + 1)) &
-                                        + 0.125*sum(vz_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
+                                call output_array(snapvx, tidy(dir_snapshot)//'/shot_' &
+                                    //num2str(sgmtr%id) &
+                                    //'_reconstructed_wavefield_x_' &
+                                    //num2str(l)//'.bin', store=321)
+                                call output_array(snapvy, tidy(dir_snapshot)//'/shot_' &
+                                    //num2str(sgmtr%id) &
+                                    //'_reconstructed_wavefield_y_' &
+                                    //num2str(l)//'.bin', store=321)
+                                call output_array(snapvz, tidy(dir_snapshot)//'/shot_' &
+                                    //num2str(sgmtr%id) &
+                                    //'_reconstructed_wavefield_z_' &
+                                    //num2str(l)//'.bin', store=321)
+
+                            end if
+
+                        else
+
+                            snapvx = 0.0
+                            snapvy = 0.0
+                            snapvz = 0.0
+
+                            !$omp parallel do private(i, j, k) collapse(3)
+                            do k = nz1, nz2
+                                do j = ny1, ny2
+                                    do i = nx1, nx2
+                                        snapvx(i, j, k) = &
+                                            0.5*sum(vx_hxiyiz(i:i + 1, j, k)) &
+                                            + 0.5*sum(vx_ixhyiz(i, j:j + 1, k)) &
+                                            + 0.5*sum(vx_ixiyhz(i, j, k:k + 1)) &
+                                            + 0.125*sum(vx_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
+                                        snapvy(i, j, k) = &
+                                            0.5*sum(vy_hxiyiz(i:i + 1, j, k)) &
+                                            + 0.5*sum(vy_ixhyiz(i, j:j + 1, k)) &
+                                            + 0.5*sum(vy_ixiyhz(i, j, k:k + 1)) &
+                                            + 0.125*sum(vy_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
+                                        snapvz(i, j, k) = &
+                                            0.5*sum(vz_hxiyiz(i:i + 1, j, k)) &
+                                            + 0.5*sum(vz_ixhyiz(i, j:j + 1, k)) &
+                                            + 0.5*sum(vz_ixiyhz(i, j, k:k + 1)) &
+                                            + 0.125*sum(vz_hxhyhz(i:i + 1, j:j + 1, k:k + 1))
+                                    end do
                                 end do
                             end do
-                        end do
-                        !$omp end parallel do
+                            !$omp end parallel do
 
-                        call reduce_array_group(snapvx)
-                        call reduce_array_group(snapvy)
-                        call reduce_array_group(snapvz)
+                            call reduce_array_group(snapvx)
+                            call reduce_array_group(snapvy)
+                            call reduce_array_group(snapvz)
 
-                        snapvx = 0.25*snapvx
-                        snapvy = 0.25*snapvy
-                        snapvz = 0.25*snapvz
+                            snapvx = 0.25*snapvx
+                            snapvy = 0.25*snapvy
+                            snapvz = 0.25*snapvz
 
-                        ! Output
-                        if (rankid_group == 0) then
-                            call output_array(snapvx(1:nx, 1:ny, 1:nz), tidy(dir_snapshot)//'/shot_' &
-                                //num2str(sgmtr%id) &
-                                //'_reconstructed_wavefield_x_' &
-                                //num2str(l)//'.bin', store=321)
-                            call output_array(snapvy(1:nx, 1:ny, 1:nz), tidy(dir_snapshot)//'/shot_' &
-                                //num2str(sgmtr%id) &
-                                //'_reconstructed_wavefield_y_' &
-                                //num2str(l)//'.bin', store=321)
-                            call output_array(snapvz(1:nx, 1:ny, 1:nz), tidy(dir_snapshot)//'/shot_' &
-                                //num2str(sgmtr%id) &
-                                //'_reconstructed_wavefield_z_' &
-                                //num2str(l)//'.bin', store=321)
+                            ! Output
+                            if (rankid_group == 0) then
+                                call output_array(snapvx(1:nx, 1:ny, 1:nz), tidy(dir_snapshot)//'/shot_' &
+                                    //num2str(sgmtr%id) &
+                                    //'_reconstructed_wavefield_x_' &
+                                    //num2str(l)//'.bin', store=321)
+                                call output_array(snapvy(1:nx, 1:ny, 1:nz), tidy(dir_snapshot)//'/shot_' &
+                                    //num2str(sgmtr%id) &
+                                    //'_reconstructed_wavefield_y_' &
+                                    //num2str(l)//'.bin', store=321)
+                                call output_array(snapvz(1:nx, 1:ny, 1:nz), tidy(dir_snapshot)//'/shot_' &
+                                    //num2str(sgmtr%id) &
+                                    //'_reconstructed_wavefield_z_' &
+                                    //num2str(l)//'.bin', store=321)
+                            end if
+
                         end if
 
+                        l = l - 1
                     end if
-
-                    l = l - 1
                 end if
+
             end if
 
             ! -------------- Adjoint wavefield reverse-time propagation ----------------------
@@ -1015,10 +1019,14 @@ contains
 
         ! Output source parameter gradient
         if (yn_grad_source) then
-            call grd%init(n=[nc_mt, 1, 1], d=[1.0, 1.0, 1.0], o=[0.0, 0.0, 0.0])
-            grd%array = reshape(grad_mt, [nc_mt, 1, 1])
-            call grd%output(tidy(dir_working)//'/shot_'//num2str(sgmtr%id)//'_grad_mt.grd')
+            call allreduce_array_group(grad_mt)
+            if (rankid_group == 0) then
+                call grd%init(n=[nc_mt, 1, 1], d=[1.0, 1.0, 1.0], o=[0.0, 0.0, 0.0])
+                grd%array = reshape(grad_mt, [nc_mt, 1, 1])
+                call grd%output(tidy(dir_working)//'/shot_'//num2str(sgmtr%id)//'_grad_mt.grd')
+            end if
         end if
+        call mpibarrier_group
 
         if (.not. yn_grad_medium) then
             return
@@ -2247,37 +2255,39 @@ contains
             do irz = -nkw, nkw
                 do iry = -nkw, nkw
                     do irx = -nkw, nkw
-                        ! ix-iy-iz
-                        grad_mt(1) = grad_mt(1) - &
-                            stressxx_ixiyiz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_ix(irx) &
-                            *sgmtr%srcr(i)%interp_iy(iry) &
-                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
-                        grad_mt(2) = grad_mt(2) - &
-                            stressyy_ixiyiz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_ix(irx) &
-                            *sgmtr%srcr(i)%interp_iy(iry) &
-                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
-                        grad_mt(3) = grad_mt(3) - &
-                            stresszz_ixiyiz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_ix(irx) &
-                            *sgmtr%srcr(i)%interp_iy(iry) &
-                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
-                        grad_mt(4) = grad_mt(4) - &
-                            stressxy_ixiyiz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_ix(irx) &
-                            *sgmtr%srcr(i)%interp_iy(iry) &
-                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
-                        grad_mt(5) = grad_mt(5) - &
-                            stressxz_ixiyiz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_ix(irx) &
-                            *sgmtr%srcr(i)%interp_iy(iry) &
-                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
-                        grad_mt(6) = grad_mt(6) - &
-                            stressyz_ixiyiz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_ix(irx) &
-                            *sgmtr%srcr(i)%interp_iy(iry) &
-                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                        if (is_in_block(sgx + irx, sgy + iry, sgz + irz) .and. ifelse(yn_free_surface, sgz + irz >= 2, .true.)) then
+                            ! ix-iy-iz
+                            grad_mt(1) = grad_mt(1) - &
+                                stressxxr_ixiyiz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_ix(irx) &
+                                *sgmtr%srcr(i)%interp_iy(iry) &
+                                *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                            grad_mt(2) = grad_mt(2) - &
+                                stressyyr_ixiyiz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_ix(irx) &
+                                *sgmtr%srcr(i)%interp_iy(iry) &
+                                *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                            grad_mt(3) = grad_mt(3) - &
+                                stresszzr_ixiyiz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_ix(irx) &
+                                *sgmtr%srcr(i)%interp_iy(iry) &
+                                *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                            grad_mt(4) = grad_mt(4) - &
+                                stressxyr_ixiyiz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_ix(irx) &
+                                *sgmtr%srcr(i)%interp_iy(iry) &
+                                *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                            grad_mt(5) = grad_mt(5) - &
+                                stressxzr_ixiyiz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_ix(irx) &
+                                *sgmtr%srcr(i)%interp_iy(iry) &
+                                *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                            grad_mt(6) = grad_mt(6) - &
+                                stressyzr_ixiyiz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_ix(irx) &
+                                *sgmtr%srcr(i)%interp_iy(iry) &
+                                *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                        end if
                     end do
                 end do
             end do
@@ -2288,37 +2298,39 @@ contains
             do irz = -nkw, nkw
                 do iry = -nkw, nkw
                     do irx = -nkw, nkw
-                        ! hx-hy-iz
-                        grad_mt(1) = grad_mt(1) - &
-                            stressxx_hxhyiz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_hx(irx) &
-                            *sgmtr%srcr(i)%interp_hy(iry) &
-                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
-                        grad_mt(2) = grad_mt(2) - &
-                            stressyy_hxhyiz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_hx(irx) &
-                            *sgmtr%srcr(i)%interp_hy(iry) &
-                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
-                        grad_mt(3) = grad_mt(3) - &
-                            stresszz_hxhyiz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_hx(irx) &
-                            *sgmtr%srcr(i)%interp_hy(iry) &
-                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
-                        grad_mt(4) = grad_mt(4) - &
-                            stressxy_hxhyiz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_hx(irx) &
-                            *sgmtr%srcr(i)%interp_hy(iry) &
-                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
-                        grad_mt(5) = grad_mt(5) - &
-                            stressxz_hxhyiz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_hx(irx) &
-                            *sgmtr%srcr(i)%interp_hy(iry) &
-                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
-                        grad_mt(6) = grad_mt(6) - &
-                            stressyz_hxhyiz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_hx(irx) &
-                            *sgmtr%srcr(i)%interp_hy(iry) &
-                            *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                        if (is_in_block(sgx + irx, sgy + iry, sgz + irz) .and. ifelse(yn_free_surface, sgz + irz >= 2, .true.)) then
+                            ! hx-hy-iz
+                            grad_mt(1) = grad_mt(1) - &
+                                stressxxr_hxhyiz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_hx(irx) &
+                                *sgmtr%srcr(i)%interp_hy(iry) &
+                                *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                            grad_mt(2) = grad_mt(2) - &
+                                stressyyr_hxhyiz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_hx(irx) &
+                                *sgmtr%srcr(i)%interp_hy(iry) &
+                                *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                            grad_mt(3) = grad_mt(3) - &
+                                stresszzr_hxhyiz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_hx(irx) &
+                                *sgmtr%srcr(i)%interp_hy(iry) &
+                                *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                            grad_mt(4) = grad_mt(4) - &
+                                stressxyr_hxhyiz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_hx(irx) &
+                                *sgmtr%srcr(i)%interp_hy(iry) &
+                                *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                            grad_mt(5) = grad_mt(5) - &
+                                stressxzr_hxhyiz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_hx(irx) &
+                                *sgmtr%srcr(i)%interp_hy(iry) &
+                                *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                            grad_mt(6) = grad_mt(6) - &
+                                stressyzr_hxhyiz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_hx(irx) &
+                                *sgmtr%srcr(i)%interp_hy(iry) &
+                                *sgmtr%srcr(i)%interp_iz(irz)*dstf_dt(t, i)
+                        end if
                     end do
                 end do
             end do
@@ -2329,37 +2341,39 @@ contains
             do irz = -nkw, nkw
                 do iry = -nkw, nkw
                     do irx = -nkw, nkw
-                        ! hx-iy-hz
-                        grad_mt(1) = grad_mt(1) - &
-                            stressxx_hxiyhz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_hx(irx) &
-                            *sgmtr%srcr(i)%interp_iy(iry) &
-                            *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
-                        grad_mt(2) = grad_mt(2) - &
-                            stressyy_hxiyhz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_hx(irx) &
-                            *sgmtr%srcr(i)%interp_iy(iry) &
-                            *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
-                        grad_mt(3) = grad_mt(3) - &
-                            stresszz_hxiyhz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_hx(irx) &
-                            *sgmtr%srcr(i)%interp_iy(iry) &
-                            *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
-                        grad_mt(4) = grad_mt(4) - &
-                            stressxy_hxiyhz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_hx(irx) &
-                            *sgmtr%srcr(i)%interp_iy(iry) &
-                            *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
-                        grad_mt(5) = grad_mt(5) - &
-                            stressxz_hxiyhz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_hx(irx) &
-                            *sgmtr%srcr(i)%interp_iy(iry) &
-                            *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
-                        grad_mt(6) = grad_mt(6) - &
-                            stressyz_hxiyhz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_hx(irx) &
-                            *sgmtr%srcr(i)%interp_iy(iry) &
-                            *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                        if (is_in_block(sgx + irx, sgy + iry, sgz + irz) .and. ifelse(yn_free_surface, sgz + irz >= 2, .true.)) then
+                            ! hx-iy-hz
+                            grad_mt(1) = grad_mt(1) - &
+                                stressxxr_hxiyhz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_hx(irx) &
+                                *sgmtr%srcr(i)%interp_iy(iry) &
+                                *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                            grad_mt(2) = grad_mt(2) - &
+                                stressyyr_hxiyhz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_hx(irx) &
+                                *sgmtr%srcr(i)%interp_iy(iry) &
+                                *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                            grad_mt(3) = grad_mt(3) - &
+                                stresszzr_hxiyhz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_hx(irx) &
+                                *sgmtr%srcr(i)%interp_iy(iry) &
+                                *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                            grad_mt(4) = grad_mt(4) - &
+                                stressxyr_hxiyhz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_hx(irx) &
+                                *sgmtr%srcr(i)%interp_iy(iry) &
+                                *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                            grad_mt(5) = grad_mt(5) - &
+                                stressxzr_hxiyhz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_hx(irx) &
+                                *sgmtr%srcr(i)%interp_iy(iry) &
+                                *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                            grad_mt(6) = grad_mt(6) - &
+                                stressyzr_hxiyhz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_hx(irx) &
+                                *sgmtr%srcr(i)%interp_iy(iry) &
+                                *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                        end if
                     end do
                 end do
             end do
@@ -2370,37 +2384,39 @@ contains
             do irz = -nkw, nkw
                 do iry = -nkw, nkw
                     do irx = -nkw, nkw
-                        ! ix-hy-hz
-                        grad_mt(1) = grad_mt(1) - &
-                            stressxx_ixhyhz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_ix(irx) &
-                            *sgmtr%srcr(i)%interp_hy(iry) &
-                            *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
-                        grad_mt(2) = grad_mt(2) - &
-                            stressyy_ixhyhz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_ix(irx) &
-                            *sgmtr%srcr(i)%interp_hy(iry) &
-                            *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
-                        grad_mt(3) = grad_mt(3) - &
-                            stresszz_ixhyhz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_ix(irx) &
-                            *sgmtr%srcr(i)%interp_hy(iry) &
-                            *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
-                        grad_mt(4) = grad_mt(4) - &
-                            stressxy_ixhyhz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_ix(irx) &
-                            *sgmtr%srcr(i)%interp_hy(iry) &
-                            *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
-                        grad_mt(5) = grad_mt(5) - &
-                            stressxz_ixhyhz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_ix(irx) &
-                            *sgmtr%srcr(i)%interp_hy(iry) &
-                            *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
-                        grad_mt(6) = grad_mt(6) - &
-                            stressyz_ixhyhz(sgx + irx, sgy + iry, sgz + irz) &
-                            *sgmtr%srcr(i)%interp_ix(irx) &
-                            *sgmtr%srcr(i)%interp_hy(iry) &
-                            *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                        if (is_in_block(sgx + irx, sgy + iry, sgz + irz) .and. ifelse(yn_free_surface, sgz + irz >= 2, .true.)) then
+                            ! ix-hy-hz
+                            grad_mt(1) = grad_mt(1) - &
+                                stressxxr_ixhyhz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_ix(irx) &
+                                *sgmtr%srcr(i)%interp_hy(iry) &
+                                *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                            grad_mt(2) = grad_mt(2) - &
+                                stressyyr_ixhyhz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_ix(irx) &
+                                *sgmtr%srcr(i)%interp_hy(iry) &
+                                *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                            grad_mt(3) = grad_mt(3) - &
+                                stresszzr_ixhyhz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_ix(irx) &
+                                *sgmtr%srcr(i)%interp_hy(iry) &
+                                *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                            grad_mt(4) = grad_mt(4) - &
+                                stressxyr_ixhyhz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_ix(irx) &
+                                *sgmtr%srcr(i)%interp_hy(iry) &
+                                *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                            grad_mt(5) = grad_mt(5) - &
+                                stressxzr_ixhyhz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_ix(irx) &
+                                *sgmtr%srcr(i)%interp_hy(iry) &
+                                *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                            grad_mt(6) = grad_mt(6) - &
+                                stressyzr_ixhyhz(sgx + irx, sgy + iry, sgz + irz) &
+                                *sgmtr%srcr(i)%interp_ix(irx) &
+                                *sgmtr%srcr(i)%interp_hy(iry) &
+                                *sgmtr%srcr(i)%interp_hz(irz)*dstf_dt(t, i)
+                        end if
                     end do
                 end do
             end do

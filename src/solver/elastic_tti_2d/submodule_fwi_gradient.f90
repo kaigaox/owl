@@ -148,150 +148,154 @@ contains
         l = np
         do t = nt, sgmtr%srcr(1)%hnt, -1
 
-            prev_stressxx_ixiz = stressxx_ixiz
-            prev_stressxx_hxhz = stressxx_hxhz
-            prev_stresszz_ixiz = stresszz_ixiz
-            prev_stresszz_hxhz = stresszz_hxhz
-            prev_stressxz_ixiz = stressxz_ixiz
-            prev_stressxz_hxhz = stressxz_hxhz
-            prev_vx_hxiz = vx_hxiz
-            prev_vx_ixhz = vx_ixhz
-            prev_vz_hxiz = vz_hxiz
-            prev_vz_ixhz = vz_ixhz
+            if (yn_grad_medium) then
 
-            ! -------------- Forward wavefield reconstruction -----------------------
-            if (yn_free_surface) then
-                call update_wavefield_free_surface(-dt, &
-                    stressxx_ixiz, stresszz_ixiz, stressxz_ixiz, &
-                    stressxx_hxhz, stresszz_hxhz, stressxz_hxhz, &
-                    vx_ixhz, vz_ixhz, &
-                    vx_hxiz, vz_hxiz, &
-                    memory_pdxvx_hxhz, &
-                    memory_pdxvz_hxhz, &
-                    memory_pdxvx_ixiz, &
-                    memory_pdxvz_ixiz, &
-                    memory_pdxxx_hxiz, &
-                    memory_pdxxz_hxiz, &
-                    memory_pdxxx_ixhz, &
-                    memory_pdxxz_ixhz, &
-                    memory_pdzvx_hxhz, &
-                    memory_pdzvz_hxhz, &
-                    memory_pdzvx_ixiz, &
-                    memory_pdzvz_ixiz, &
-                    memory_pdzxx_hxiz, &
-                    memory_pdzxz_hxiz, &
-                    memory_pdzzz_hxiz, &
-                    memory_pdzxx_ixhz, &
-                    memory_pdzxz_ixhz, &
-                    memory_pdzzz_ixhz)
-            else
-                call update_wavefield(-dt, &
-                    stressxx_ixiz, stresszz_ixiz, stressxz_ixiz, &
-                    stressxx_hxhz, stresszz_hxhz, stressxz_hxhz, &
-                    vx_ixhz, vz_ixhz, &
-                    vx_hxiz, vz_hxiz, &
-                    memory_pdxvx_hxhz, &
-                    memory_pdxvz_hxhz, &
-                    memory_pdxvx_ixiz, &
-                    memory_pdxvz_ixiz, &
-                    memory_pdxxx_hxiz, &
-                    memory_pdxxz_hxiz, &
-                    memory_pdxxx_ixhz, &
-                    memory_pdxxz_ixhz, &
-                    memory_pdzvx_hxhz, &
-                    memory_pdzvz_hxhz, &
-                    memory_pdzvx_ixiz, &
-                    memory_pdzvz_ixiz, &
-                    memory_pdzxz_hxiz, &
-                    memory_pdzzz_hxiz, &
-                    memory_pdzxz_ixhz, &
-                    memory_pdzzz_ixhz)
-            end if
+                prev_stressxx_ixiz = stressxx_ixiz
+                prev_stressxx_hxhz = stressxx_hxhz
+                prev_stresszz_ixiz = stresszz_ixiz
+                prev_stresszz_hxhz = stresszz_hxhz
+                prev_stressxz_ixiz = stressxz_ixiz
+                prev_stressxz_hxhz = stressxz_hxhz
+                prev_vx_hxiz = vx_hxiz
+                prev_vx_ixhz = vx_ixhz
+                prev_vz_hxiz = vz_hxiz
+                prev_vz_ixhz = vz_ixhz
 
-            ! Read final step wavefield
-            if (t == nt) then
-                call input_final_step_wavefield
-            end if
-
-            ! Read boundary wavefield
-            call inject_boundary_wavefield(t)
-
-            ! Record wavefield snapshot if necessary
-            if (np /= 0 .and. l >= 1) then
-                if (t - 1 == nint(snaps(l)/dt)) then
-
-                    if (yn_free_surface) then
-
-                        call alloc_array(snapvx, [1, nx, 1, nz], pad=pml)
-                        call alloc_array(snapvz, [1, nx, 1, nz], pad=pml)
-
-                        !$omp parallel do private(i, j) collapse(2)
-                        do j = -pml + 1, nz + pml
-                            do i = -pml + 1, nx + pml
-                                snapvx(i, j) = 0.5*(0.5*sum(vx_hxiz(i:i + 1, j)) + 0.5*sum(vx_ixhz(i, j:j + 1)))
-                                snapvz(i, j) = 0.5*(0.5*sum(vz_hxiz(i:i + 1, j)) + 0.5*sum(vz_ixhz(i, j:j + 1)))
-                            end do
-                        end do
-                        !$omp end parallel do
-
-                        open(3, file=tidy(dir_snapshot)//'/shot_' &
-                            //num2str(sgmtr%id) &
-                            //'_reconstructed_wavefield_x_' &
-                            //num2str(l)//'.txt')
-                        do i = -pml + 1, nx + pml
-                            do j = 1, nz + pml
-                                write(3, *) (i - 1)*dx, zz_i(i, j), snapvx(i, j)
-                            end do
-                        end do
-                        close(3)
-
-                        open(3, file=tidy(dir_snapshot)//'/shot_' &
-                            //num2str(sgmtr%id) &
-                            //'_reconstructed_wavefield_z_' &
-                            //num2str(l)//'.txt')
-                        do i = -pml + 1, nx + pml
-                            do j = 1, nz + pml
-                                write(3, *) (i - 1)*dx, zz_i(i, j), snapvz(i, j)
-                            end do
-                        end do
-                        close(3)
-
-                        call map_irregular_to_regular(snapvx, this, [1, this%nx, 1, this%nz])
-                        call map_irregular_to_regular(snapvz, this, [1, this%nx, 1, this%nz])
-
-                        call output_array(snapvx, tidy(dir_snapshot)//'/shot_' &
-                            //num2str(sgmtr%id) &
-                            //'_reconstructed_wavefield_x_' &
-                            //num2str(l)//'.bin', transp=.true.)
-                        call output_array(snapvz, tidy(dir_snapshot)//'/shot_' &
-                            //num2str(sgmtr%id) &
-                            //'_reconstructed_wavefield_z_' &
-                            //num2str(l)//'.bin', transp=.true.)
-
-                    else
-
-                        !$omp parallel do private(i, j) collapse(2)
-                        do j = -pml + 1, nz + pml - 1
-                            do i = -pml + 1, nx + pml - 1
-                                snapvx(i, j) = 0.5*(0.5*sum(vx_hxiz(i:i + 1, j)) + 0.5*sum(vx_ixhz(i, j:j + 1)))
-                                snapvz(i, j) = 0.5*(0.5*sum(vz_hxiz(i:i + 1, j)) + 0.5*sum(vz_ixhz(i, j:j + 1)))
-                            end do
-                        end do
-
-                        call output_array(snapvx(1:nx, 1:nz), tidy(dir_snapshot)//'/shot_' &
-                            //num2str(sgmtr%id) &
-                            //'_reconstructed_wavefield_x_' &
-                            //num2str(l)//'.bin', transp=.true.)
-                        call output_array(snapvz(1:nx, 1:nz), tidy(dir_snapshot)//'/shot_' &
-                            //num2str(sgmtr%id) &
-                            //'_reconstructed_wavefield_z_' &
-                            //num2str(l)//'.bin', transp=.true.)
-
-                    end if
-
-
-                    l = l - 1
+                ! -------------- Forward wavefield reconstruction -----------------------
+                if (yn_free_surface) then
+                    call update_wavefield_free_surface(-dt, &
+                        stressxx_ixiz, stresszz_ixiz, stressxz_ixiz, &
+                        stressxx_hxhz, stresszz_hxhz, stressxz_hxhz, &
+                        vx_ixhz, vz_ixhz, &
+                        vx_hxiz, vz_hxiz, &
+                        memory_pdxvx_hxhz, &
+                        memory_pdxvz_hxhz, &
+                        memory_pdxvx_ixiz, &
+                        memory_pdxvz_ixiz, &
+                        memory_pdxxx_hxiz, &
+                        memory_pdxxz_hxiz, &
+                        memory_pdxxx_ixhz, &
+                        memory_pdxxz_ixhz, &
+                        memory_pdzvx_hxhz, &
+                        memory_pdzvz_hxhz, &
+                        memory_pdzvx_ixiz, &
+                        memory_pdzvz_ixiz, &
+                        memory_pdzxx_hxiz, &
+                        memory_pdzxz_hxiz, &
+                        memory_pdzzz_hxiz, &
+                        memory_pdzxx_ixhz, &
+                        memory_pdzxz_ixhz, &
+                        memory_pdzzz_ixhz)
+                else
+                    call update_wavefield(-dt, &
+                        stressxx_ixiz, stresszz_ixiz, stressxz_ixiz, &
+                        stressxx_hxhz, stresszz_hxhz, stressxz_hxhz, &
+                        vx_ixhz, vz_ixhz, &
+                        vx_hxiz, vz_hxiz, &
+                        memory_pdxvx_hxhz, &
+                        memory_pdxvz_hxhz, &
+                        memory_pdxvx_ixiz, &
+                        memory_pdxvz_ixiz, &
+                        memory_pdxxx_hxiz, &
+                        memory_pdxxz_hxiz, &
+                        memory_pdxxx_ixhz, &
+                        memory_pdxxz_ixhz, &
+                        memory_pdzvx_hxhz, &
+                        memory_pdzvz_hxhz, &
+                        memory_pdzvx_ixiz, &
+                        memory_pdzvz_ixiz, &
+                        memory_pdzxz_hxiz, &
+                        memory_pdzzz_hxiz, &
+                        memory_pdzxz_ixhz, &
+                        memory_pdzzz_ixhz)
                 end if
+
+                ! Read final step wavefield
+                if (t == nt) then
+                    call input_final_step_wavefield
+                end if
+
+                ! Read boundary wavefield
+                call inject_boundary_wavefield(t)
+
+                ! Record wavefield snapshot if necessary
+                if (np /= 0 .and. l >= 1) then
+                    if (t - 1 == nint(snaps(l)/dt)) then
+
+                        if (yn_free_surface) then
+
+                            call alloc_array(snapvx, [1, nx, 1, nz], pad=pml)
+                            call alloc_array(snapvz, [1, nx, 1, nz], pad=pml)
+
+                            !$omp parallel do private(i, j) collapse(2)
+                            do j = -pml + 1, nz + pml
+                                do i = -pml + 1, nx + pml
+                                    snapvx(i, j) = 0.5*(0.5*sum(vx_hxiz(i:i + 1, j)) + 0.5*sum(vx_ixhz(i, j:j + 1)))
+                                    snapvz(i, j) = 0.5*(0.5*sum(vz_hxiz(i:i + 1, j)) + 0.5*sum(vz_ixhz(i, j:j + 1)))
+                                end do
+                            end do
+                            !$omp end parallel do
+
+                            open(3, file=tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_x_' &
+                                //num2str(l)//'.txt')
+                            do i = -pml + 1, nx + pml
+                                do j = 1, nz + pml
+                                    write(3, *) (i - 1)*dx, zz_i(i, j), snapvx(i, j)
+                                end do
+                            end do
+                            close(3)
+
+                            open(3, file=tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_z_' &
+                                //num2str(l)//'.txt')
+                            do i = -pml + 1, nx + pml
+                                do j = 1, nz + pml
+                                    write(3, *) (i - 1)*dx, zz_i(i, j), snapvz(i, j)
+                                end do
+                            end do
+                            close(3)
+
+                            call map_irregular_to_regular(snapvx, this, [1, this%nx, 1, this%nz])
+                            call map_irregular_to_regular(snapvz, this, [1, this%nx, 1, this%nz])
+
+                            call output_array(snapvx, tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_x_' &
+                                //num2str(l)//'.bin', transp=.true.)
+                            call output_array(snapvz, tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_z_' &
+                                //num2str(l)//'.bin', transp=.true.)
+
+                        else
+
+                            !$omp parallel do private(i, j) collapse(2)
+                            do j = -pml + 1, nz + pml - 1
+                                do i = -pml + 1, nx + pml - 1
+                                    snapvx(i, j) = 0.5*(0.5*sum(vx_hxiz(i:i + 1, j)) + 0.5*sum(vx_ixhz(i, j:j + 1)))
+                                    snapvz(i, j) = 0.5*(0.5*sum(vz_hxiz(i:i + 1, j)) + 0.5*sum(vz_ixhz(i, j:j + 1)))
+                                end do
+                            end do
+
+                            call output_array(snapvx(1:nx, 1:nz), tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_x_' &
+                                //num2str(l)//'.bin', transp=.true.)
+                            call output_array(snapvz(1:nx, 1:nz), tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_z_' &
+                                //num2str(l)//'.bin', transp=.true.)
+
+                        end if
+
+
+                        l = l - 1
+                    end if
+                end if
+
             end if
 
             ! -------------- Adjoint wavefield reverse-time propagation -----------------------
