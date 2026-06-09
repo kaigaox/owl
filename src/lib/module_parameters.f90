@@ -293,7 +293,6 @@ module mod_parameters
 
     logical :: yn_shared_model_processing = .true.
     character(len=32), allocatable, dimension(:) :: gradient_processing
-    character(len=32), allocatable, dimension(:) :: search_direction_processing
     character(len=32), allocatable, dimension(:) :: process_shot_grad, process_grad
 
     integer :: resume_from_iter
@@ -591,7 +590,6 @@ contains
         call readpar_nstring(file_parameter, 'process_adjsrc', adjoint_source_processing, [''])
         call readpar_nstring(file_parameter, 'process_shot_grad', process_shot_grad, [''])
         call readpar_nstring(file_parameter, 'process_grad', gradient_processing, [''])
-        call readpar_nstring(file_parameter, 'process_srch', search_direction_processing, [''])
 
         call readpar_logical(file_parameter, 'yn_shared_model_processing', yn_shared_model_processing, .true.)
 
