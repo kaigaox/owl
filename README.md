@@ -1,11 +1,12 @@
 # Description
-**OWL: Open Wave Library for seismic wave modeling and full-waveform inversion**
+**OWL: Open Wave Library for seismic wave modeling and full-waveform inversion** 
+[![DOI](https://zenodo.org/badge/1009207523.svg)](https://doi.org/10.5281/zenodo.20668967)
 
 `OWL` is an open-source package for seismic wave simulation and full-waveform inversion (FWI) in the following types of media: 
 
 - 2D/3D isotropic acoustic media, with or without a flat acoustic free surface at the top. 
-- 2D/3D isotropic or simple anisotropic (see below for definition) elastic media, with or without a flat elastic free surface at the top. 
-- 2D/3D isotropic or general anisotropic (see below for definition) elastic media, with or without a flat or topographic elastic free surface at the top. 
+- 2D/3D isotropic or simple anisotropic elastic media, with or without a flat elastic free surface at the top. 
+- 2D/3D isotropic or general anisotropic elastic media, with or without a flat or topographic elastic free surface at the top. 
 
 Currently, `OWL` does not yet support wave modeling or FWI in: 
 - Coupled acoustic-elastic media (i.e., coupled fluid and solid media)
