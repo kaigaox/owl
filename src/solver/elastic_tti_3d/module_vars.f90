@@ -464,7 +464,6 @@ contains
         real :: dz0
         real :: wmin, wmax
         real :: stable_eta_max, rayleigh_vs
-        real :: etam, topo_min
         integer :: nbeg, nend
 
         nx = this%nx
@@ -810,25 +809,6 @@ contains
             topo_max = maxval(topo_ixiy)
             depth_max = (this%nz - 1)*this%dz - topo_max
             eta_max = depth_max
-
-            ! Topography-relief depth padding.
-            ! The terrain-following mesh maps nz points from each column's
-            ! surface to a common flat bottom; the stability limit then forces
-            !   eta_max ~ (nz-1)*dz - relief,   relief = topo_max - topo_min,
-            ! so the vertical stretch ~ (nz-1)*dz / ((nz-1)*dz - relief).  For
-            ! tall topography (steep slope x wide model) the stretch is large
-            ! and produces a tilt-dependent AMPLITUDE error.  Deepen the flat
-            ! bottom so the total depth budget is a few times the relief; pad
-            ! nz so the near-surface dz stays the same.
-            topo_min = minval(topo_ixiy)
-            etam = topo_max - topo_min                          ! relief
-            if ((this%nz - 1)*this%dz < 4.0*etam) then
-                nz = nint(4.0*etam/this%dz) + 1
-                depth_max = (nz - 1)*this%dz - topo_max
-                eta_max = depth_max
-                call warn(date_time_compact()//' Relief padding: nz '//num2str(this%nz) &
-                    //' -> '//num2str(nz)//', depth_max = '//num2str(depth_max, '(es)'))
-            end if
 
             ! Check stability of mesh
             stable_eta_max = min( &

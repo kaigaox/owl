@@ -42,7 +42,7 @@ os.makedirs(PLOT, exist_ok=True)
 
 # ── medium / acquisition ────────────────────────────────────────────────────
 VP, VS, RHO = 3000.0, 1732.0, 2000.0     # Poisson solid (vp/vs = sqrt3)
-F0   = 12.5
+F0   = 20.0
 DX = DZ = 10.0
 DT   = 2.0e-4
 DATA_DT = 1.0e-3
@@ -50,20 +50,36 @@ TMAX = 0.6
 REFINE = 4.0
 AMP  = 1.0e6
 
-NX, NZ = 121, 121                         # 1200 m x 1200 m
+NX, NZ = 121, 241                         # 1200 m x 2000 m
+PML = 15                                  # keep explicit: OWL's elastic-tti default
 XC   = 250.0                              # source position (updip side of spread)
 EXT  = 200.0                              # topo extension beyond the domain (m)
 OFFSETS = np.array([150., 250., 350., 450., 550.])   # along-surface, downdip (m)
 
-ANGLES = [0.0, 5.0, 10.0, 20.0, 30.0]
+ANGLES = [0.0, 5.0, 10.0, 20.0, 25.0]
 POLAR_SIGN = -1.0     # descending-downdip surface: slopex=-dz/dx on the receiver
                       # side, so the inward surface normal is (-sin th, cos th)
 SRC_DEPTH = 0.0       # source depth below the free surface (m)
 REC_DEPTH = 0.0       # receiver depth below the free surface (m)
-MECH = 'force'        # 'force' (surface-normal) or 'explosion' (isotropic)
+MECH = 'force'        # 'force' (surface-normal)
 
 SNAPS = '0.0, 0.05, 0.6'   # OWL snapshot times: 0, 0.05, ..., 0.6 s (index 1..13)
 SNAP_L = 6                 # snapshot index to draw; t = (SNAP_L-1)*0.05 s
+
+ZMIN_DISPLAY = 0
+ZMAX_DISPLAY = 800
+
+
+def topo_elevation(theta_deg, x):
+    return -x * np.tan(np.radians(theta_deg))
+
+
+def owl_topo_sample_x():
+    return np.arange(-(PML + 1) * DX, (NX + PML) * DX + 0.5 * DX, DX)
+
+
+def owl_topo_max(theta_deg):
+    return float(np.max(topo_elevation(theta_deg, owl_topo_sample_x())))
 
 
 def write_topo(path, theta_deg):
@@ -71,10 +87,9 @@ def write_topo(path, theta_deg):
     descending downdip (toward the receivers) with slope tan(theta).  It extends
     LINEARLY beyond the model on both sides -- a true tilted plane, no flat
     clamp.  Flat case (theta=0) -> z = 0 everywhere."""
-    th = np.radians(theta_deg)
     xmax = (NX - 1) * DX
     x = np.arange(-EXT, xmax + EXT + DX, DX)
-    z = -x * np.tan(th)                          # continuous plane, z = 0 at x = 0
+    z = topo_elevation(theta_deg, x)              # continuous plane, z = 0 at x = 0
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w') as f:
         for xi, zi in zip(x, z):
@@ -106,6 +121,7 @@ def run_owl_angle(theta_deg):
 
     write_param(os.path.join(work, 'param.rb'), {
         'nx': NX, 'nz': NZ, 'dx': DX, 'dz': DZ,
+        'pml': PML,
         'dt': DT, 'data_dt': DATA_DT, 'tmax': TMAX, 'ns': 1,
         'file_geometry': './geometry/geometry.txt',
         'which_medium': 'elastic-tti', 'anisotropy_type': 'iso',
@@ -226,24 +242,21 @@ def _plot(results, nt, vR, passed, snaps):
         th = np.radians(thd)
         snap = snaps[thd]
         clip = 0.25 * (np.percentile(np.abs(snap), 99.5) or 1.0)
-        # Surface depth below the regular-grid peak at the source column (the
-        # masked air above the surface is exactly zero), then recover the peak
-        # elevation above the z=0 datum so we can plot depth-below-z=0.
-        scol = np.abs(snap[:, int(round(XC / DX))])
-        sd = np.argmax(scol > 1e-3 * (scol.max() or 1.0)) * DZ
-        peak = sd - XC * np.tan(th)              # peak elevation above z=0 datum
-        axs.imshow(snap, aspect='auto', cmap='bwr', vmin=-clip, vmax=clip,
-                   extent=[0, xext, zext - peak, -peak])
-        # free surface in depth-below-z=0: z(x)=-x*tan(th) -> depth = x*tan(th)
+        # map_irregular_to_regular writes the regular snapshot on
+        # z = (j - 1)*DZ - topo_max, so plot depth below z=0 with that shift.
+        topo_max = owl_topo_max(thd)
+        axs.imshow(snap, aspect=1, cmap='bwr', vmin=-clip, vmax=clip,
+                   extent=[0, xext, zext - topo_max, -topo_max])
+        # free surface in depth-below-z=0 is minus the topo elevation.
         xs = np.linspace(0, xext, 400)
-        axs.plot(xs, xs * np.tan(th), 'k-', lw=1.5,
+        axs.plot(xs, -topo_elevation(thd, xs), 'k-', lw=1.5,
                  label='free surface' if j == 0 else None)
-        axs.plot(XC, XC * np.tan(th), 'y*', ms=13, mec='k',
+        axs.plot(XC, -topo_elevation(thd, XC), 'y*', ms=13, mec='k',
                  label='source' if j == 0 else None)
         rxs = XC + OFFSETS * np.cos(th)
-        axs.plot(rxs, rxs * np.tan(th), 'gv', ms=6, mec='k',
+        axs.plot(rxs, -topo_elevation(thd, rxs), 'gv', ms=6, mec='k',
                  label='receivers' if j == 0 else None)
-        axs.set_xlim(0, xext); axs.set_ylim(1200.0, -100.0)
+        axs.set_xlim(0, xext); axs.set_ylim(ZMAX_DISPLAY, ZMIN_DISPLAY)
         axs.set_title(f'tilt={thd:.0f}°  v_z snapshot @ t={(SNAP_L-1)*0.05:.2f}s',
                       fontsize=8)
         if j == 0:
