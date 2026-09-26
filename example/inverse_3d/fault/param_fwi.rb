@@ -22,6 +22,7 @@ model_update = vp
 
 process_grad = mask, smooth, mask
 grad_smooth_x = 1:60, 100:30
+grad_smooth_y = 1:60, 100:30
 grad_smooth_z = 1:40, 100:20
 grad_mask = model/mask.bin
 

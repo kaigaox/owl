@@ -469,12 +469,12 @@ contains
         end if
 
         ! Range for each shot
-        shot_nxbeg = clip(int((shot_xbeg - ox)/dx) + 1, 1, nx)
-        shot_nxend = clip(int((shot_xend - ox)/dx) + 1, 1, nx)
-        shot_nybeg = clip(int((shot_ybeg - oy)/dy) + 1, 1, ny)
-        shot_nyend = clip(int((shot_yend - oy)/dy) + 1, 1, ny)
-        shot_nzbeg = clip(int((shot_zbeg - oz)/dz) + 1, 1, nz)
-        shot_nzend = clip(int((shot_zend - oz)/dz) + 1, 1, nz)
+        shot_nxbeg = clip(nint((shot_xbeg - ox)/dx) + 1, 1, nx)
+        shot_nxend = clip(nint((shot_xend - ox)/dx) + 1, 1, nx)
+        shot_nybeg = clip(nint((shot_ybeg - oy)/dy) + 1, 1, ny)
+        shot_nyend = clip(nint((shot_yend - oy)/dy) + 1, 1, ny)
+        shot_nzbeg = clip(nint((shot_zbeg - oz)/dz) + 1, 1, nz)
+        shot_nzend = clip(nint((shot_zend - oz)/dz) + 1, 1, nz)
 
         shot_nx = shot_nxend - shot_nxbeg + 1
         shot_ny = shot_nyend - shot_nybeg + 1

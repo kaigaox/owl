@@ -105,12 +105,24 @@ contains
         call assert(zmax >= zmin, ' <set_regular_space> Error: zmax must >= zmin')
 
         ! Target model origins
+        ! Note: n# are computed with nint rather than ceiling, because ceiling is
+        ! sensitive to floating-point round-off. For instance, with ox = 0,
+        ! dx = 11.2220842 and nx = 16, the default xmax = ox + (nx - 1)*dx gives
+        ! (xmax - xmin)/dx = 15.000001 instead of 15, and ceiling would add a
+        ! spurious grid point. The price is that in rare cases, when xmax - xmin
+        ! is not a multiple of dx, the model will be shortened by up to half a
+        ! grid interval, e.g., xmax - xmin = 120.4 with dx = 10 gives a model
+        ! ending at xmin + 120 rather than xmin + 130. A rigorous solution, which
+        ! always covers xmax and still ignores round-off, is
+        !     nx = ceiling((xmax - xmin - 4*spacing(max(abs(xmin), abs(xmax))))/dx) + 1
+        ! where spacing(x) is the gap between adjacent floats near x. The round-off
+        ! in xmax - xmin is at most about 2 such gaps, so 4 gives a safety margin.
         ox = xmin
         oy = ymin
         oz = zmin
-        nx = ceiling((xmax - xmin)/dx) + 1
-        ny = ceiling((ymax - ymin)/dy) + 1
-        nz = ceiling((zmax - zmin)/dz) + 1
+        nx = nint((xmax - xmin)/dx) + 1
+        ny = nint((ymax - ymin)/dy) + 1
+        nz = nint((zmax - zmin)/dz) + 1
 
         ! Check if requires model interpolation
         if (nx /= nx0 .or. ny /= ny0 .or. nz /= nz0 .or. &
