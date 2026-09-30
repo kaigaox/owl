@@ -1,5 +1,5 @@
 !
-! © 2025. Triad National Security, LLC. All rights reserved.
+! © 2025-2026. Triad National Security, LLC. All rights reserved.
 !
 ! This program was produced under U.S. Government contract 89233218CNA000001
 ! for Los Alamos National Laboratory (LANL), which is operated by
@@ -47,6 +47,8 @@ contains
         real :: reg_coef, reg_scale
         logical :: const_reg
         real, allocatable, model_dimension :: grad_mask
+        character(len=64) :: process_name
+        character(len=32), allocatable, dimension(:) :: process_list
 
         ! Update dual variable
         reg = model - reg
@@ -80,11 +82,24 @@ contains
         ! modify gradients
         grad = grad + reg_coef*reg
 
-        ! Mask gradient again
-        if (any(gradient_processing == 'mask')) then
-            call readpar_xstring(file_parameter, 'grad_mask', file_mask, file_mask, iter*1.0)
-            call prepare_model_single_parameter(grad_mask, 'mask', file_mask, update=.false.)
-            grad = grad*grad_mask
+        ! Mask gradient again, with the mask that gradient processing applied to
+        ! this parameter; source parameters are neither processed nor masked
+        if (.not. any(name == ['mt ', 'stf'])) then
+            if (yn_shared_model_processing) then
+                process_name = 'grad'
+            else
+                process_name = 'grad_'//tidy(name)
+            end if
+            call readpar_nstring(file_parameter, 'process_'//tidy(process_name), process_list, [''])
+            if (any(process_list == 'mask')) then
+                call readpar_xstring(file_parameter, tidy(process_name)//'_mask', file_mask, '', iter*1.0)
+                if (file_mask /= '') then
+                    call prepare_model_single_parameter(grad_mask, 'mask', file_mask, update=.false.)
+                else
+                    grad_mask = ones_like(grad)
+                end if
+                grad = grad*grad_mask
+            end if
         end if
 
     end subroutine
@@ -96,8 +111,10 @@ contains
 
         integer :: i
 
+        ! Only model regularization computes the regularized models (model_reg);
+        ! source regularization is not available
         do i = 1, nmodel
-            if (yn_regularize_model .or. yn_regularize_source) then
+            if (yn_regularize_model) then
                 call add_l2reg_single_parameter(model_reg(i)%array, model_m(i)%array, &
                     model_grad(i)%array, model_name(i))
             end if
@@ -116,7 +133,7 @@ contains
     !
     subroutine regularize_gradient
 
-        if (yn_regularize_model .or. yn_regularize_source) then
+        if (yn_regularize_model) then
             call add_l2reg
         end if
 

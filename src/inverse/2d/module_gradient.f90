@@ -1,5 +1,5 @@
 !
-! © 2025. Triad National Security, LLC. All rights reserved.
+! © 2025-2026. Triad National Security, LLC. All rights reserved.
 !
 ! This program was produced under U.S. Government contract 89233218CNA000001
 ! for Los Alamos National Laboratory (LANL), which is operated by
@@ -521,7 +521,9 @@ contains
 
                 case ('rms_balance')
                     ! Normalize with shot image energy
-                    grd%array = grd%array/mean(grd%array, 2)
+                    if (mean(grd%array, 2) /= 0) then
+                        grd%array = grd%array/mean(grd%array, 2)
+                    end if
 
                 case ('moving_balance')
                     ! Moving balance
@@ -626,7 +628,11 @@ contains
                     else
                         file_mask = tidy(dir_mask)//'/'//tidy(shot_prefix)//'_mask.bin'
                     end if
-                    call prepare_model_single_parameter(wmask, 'mask', file_mask, update=.false.)
+                    if (file_mask /= '') then
+                        call prepare_model_single_parameter(wmask, 'mask', file_mask, update=.false.)
+                    else
+                        wmask = ones(nz, nx)
+                    end if
                     call alloc_array(wmask, [1, shot_nz, 1, shot_nx], &
                         source=wmask(shot_nzbeg:shot_nzend, shot_nxbeg:shot_nxend))
                     grd%array = mask(grd%array, wmask)
@@ -635,9 +641,10 @@ contains
                     call readpar_float(file_parameter, 'shot_'//tidy(name)//'_adaptive_mute_x', shot_w_adaptive_mutex, -1.0)
                     call readpar_float(file_parameter, 'shot_'//tidy(name)//'_adaptive_mute_z', shot_w_adaptive_mutez, -1.0)
                     if (shot_w_adaptive_mutex >= 0) then
-                        ! find source-receiver widest possible range
-                        recmin = minval(gmtr(ishot)%recr(:)%x - grd%o2)
-                        recmax = maxval(gmtr(ishot)%recr(:)%x - grd%o2)
+                        ! find source-receiver widest possible range; as in set_adaptive_range,
+                        ! only receivers with nonzero weights count
+                        recmin = minval(gmtr(ishot)%recr(:)%x - grd%o2, mask=gmtr(ishot)%recr(:)%weight /= 0)
+                        recmax = maxval(gmtr(ishot)%recr(:)%x - grd%o2, mask=gmtr(ishot)%recr(:)%weight /= 0)
                         srcmin = minval(gmtr(ishot)%srcr(:)%x - grd%o2)
                         srcmax = maxval(gmtr(ishot)%srcr(:)%x - grd%o2)
                         ! ... and their integer grid point positions in the computed image
@@ -877,8 +884,12 @@ contains
                     w = median_filt(w, nint([w_median_filtz/dz, w_median_filtx/dx]))
 
                 case ('mask')
-                    call readpar_xstring(file_parameter, tidy(name)//'_mask', file_mask, file_mask, iter*1.0)
-                    call prepare_model_single_parameter(wmask, 'mask', file_mask, update=.false.)
+                    call readpar_xstring(file_parameter, tidy(name)//'_mask', file_mask, '', iter*1.0)
+                    if (file_mask /= '') then
+                        call prepare_model_single_parameter(wmask, 'mask', file_mask, update=.false.)
+                    else
+                        wmask = ones_like(w)
+                    end if
                     w = mask(w, wmask)
 
             end select

@@ -87,6 +87,11 @@ contains
             ! Update search direction
             srch = -grad + beta*prev_srch
 
+            ! Restart with the steepest descent when the direction is not a descent direction
+            if (sum(grad*srch) >= 0) then
+                srch = -grad
+            end if
+
         end if
 
     end function compute_search_direction_cg_single_parameter

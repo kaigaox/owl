@@ -1,5 +1,5 @@
 !
-! © 2025. Triad National Security, LLC. All rights reserved.
+! © 2025-2026. Triad National Security, LLC. All rights reserved.
 !
 ! This program was produced under U.S. Government contract 89233218CNA000001
 ! for Los Alamos National Laboratory (LANL), which is operated by
@@ -434,6 +434,7 @@ contains
                         gmtr(i)%recr(j)%z >= rzmin - topo_max .and. gmtr(i)%recr(j)%z <= rzmax - topo_max .and. &
                         gmtr(i)%recr(j)%aoff >= offset_min .and. gmtr(i)%recr(j)%aoff <= offset_max .and. &
                         j >= rec_min .and. j <= rec_max .and. mod(j - rec_min, rec_every) == 0 .and. &
+                        .not. any(rec_exclude == j) .and. &
                         gmtr(i)%recr(j)%weight /= 0 .and. rec_below_free_surface(j)) then
                     l = l + 1
                 else

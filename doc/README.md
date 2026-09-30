@@ -187,7 +187,7 @@ All source-selection filters are applied after loading the geometry file.
 | Parameter | Type | Description | Default | Required |
 |-----------|------|-------------|---------|----------|
 | `rec_index` | integer list | Receiver sequence range within each gather: `[first, step, last]` | `[1, 1, INT_MAX]` | no |
-| `rec_exclude` | integer list | Receiver sequence numbers to exclude | none | no |
+| `rec_exclude` | integer list | Receiver sequence numbers within each gather to exclude | none | no |
 | `rx_min` | float | Minimum receiver x coordinate | `-∞` | no |
 | `rx_max` | float | Maximum receiver x coordinate | `+∞` | no |
 | `ry_min` | float | Minimum receiver y coordinate | `-∞` | no |
@@ -538,7 +538,7 @@ For each model parameter `<name>`:
 
 | Parameter | Type | Description | Default | Required |
 |-----------|------|-------------|---------|----------|
-| `search_method` | string | Global inversion search direction. Supported values are `SD`/`sd`/`steepest-descent`, `CG`/`cg`/`conjugate-gradient`, and `L-BFGS`/`l-bfgs`/`l-BFGS` | `cg` | no |
+| `search_method` | string | Global inversion search direction. Supported values are `SD`/`sd`/`steepest-descent`, `CG`/`cg`/`conjugate-gradient`, and `L-BFGS`/`l-bfgs`/`l-BFGS`. `CG` restarts with steepest descent when its direction is not a descent direction | `cg` | no |
 | `search_method_<name>` | string | Per-parameter override of `search_method`; supports the same values | same as `search_method` | no |
 
 #### > Step Size
@@ -603,7 +603,7 @@ Available per-shot gradient-processing steps:
 |------|----------------|----------------|-------------|
 | `smooth` | `shot_<name>_smooth_x`, `shot_<name>_smooth_z` (`3*mdx`, `3*mdz`) | `shot_<name>_smooth_x`, `shot_<name>_smooth_y`, `shot_<name>_smooth_z` (`3*mdx`, `3*mdy`, `3*mdz`) | Gaussian smoothing |
 | `max_balance` | none | none | Normalize by the maximum value |
-| `rms_balance` | none | none | Normalize by mean/RMS-style image energy |
+| `rms_balance` | none | none | Normalize by mean/RMS-style image energy; a zero gradient is left unchanged |
 | `moving_balance` | `shot_<name>_moving_balance_x`, `shot_<name>_moving_balance_z` (`3*mdx`, `3*mdz`) | `shot_<name>_moving_balance_x`, `shot_<name>_moving_balance_y`, `shot_<name>_moving_balance_z` (`6*mdx`, `6*mdy`, `6*mdz`) | Moving-window amplitude balancing |
 | `median_filt` | `shot_<name>_median_filt_x`, `shot_<name>_median_filt_z` (`mdx`, `mdz`) | `shot_<name>_median_filt_x`, `shot_<name>_median_filt_y`, `shot_<name>_median_filt_z` (`mdx`, `mdy`, `mdz`) | Median filtering |
 | `dip_filt` | `shot_<name>_dip_filt_zx`, `shot_<name>_dip_filt_zx_coefs` | `shot_<name>_dip_filt_zx`, `shot_<name>_dip_filt_zx_coefs`, `shot_<name>_dip_filt_zy`, `shot_<name>_dip_filt_zy_coefs`, `shot_<name>_dip_filt_yx`, `shot_<name>_dip_filt_yx_coefs` | Dip-domain filtering |
@@ -612,8 +612,8 @@ Available per-shot gradient-processing steps:
 | `andf_filt` | `shot_<name>_andf_smooth_x`, `shot_<name>_andf_smooth_z`, `shot_<name>_andf_powerm`, `shot_<name>_andf_t`, `shot_<name>_andf_sigma`, `shot_<name>_andf_alpha`, `shot_<name>_andf_beta`, `shot_<name>_andf_aux`, `shot_<name>_andf_coh` | `shot_<name>_andf_smooth_x`, `shot_<name>_andf_smooth_y`, `shot_<name>_andf_smooth_z`, `shot_<name>_andf_powerm`, `shot_<name>_andf_t`, `shot_<name>_andf_sigma`, `shot_<name>_andf_alpha`, `shot_<name>_andf_beta`, `shot_<name>_andf_gamma`, `shot_<name>_andf_aux`, `shot_<name>_andf_coh` | Structure-oriented anisotropic-diffusion filtering |
 | `wavenumber_filt` | `shot_<name>_wavenumber_filt_x`, `shot_<name>_wavenumber_filt_x_coefs`, `shot_<name>_wavenumber_filt_z`, `shot_<name>_wavenumber_filt_z_coefs` | `shot_<name>_wavenumber_filt_x`, `shot_<name>_wavenumber_filt_x_coefs`, `shot_<name>_wavenumber_filt_y`, `shot_<name>_wavenumber_filt_y_coefs`, `shot_<name>_wavenumber_filt_z`, `shot_<name>_wavenumber_filt_z_coefs` | Wavenumber-domain filtering |
 | `taper` | `shot_<name>_taper_x`, `shot_<name>_taper_z` (`[0.0, 0.0]`) | `shot_<name>_taper_x`, `shot_<name>_taper_y`, `shot_<name>_taper_z` (`[0.0, 0.0]`) | Blackman taper; one value is expanded to both sides |
-| `mask` | `dir_shot_<name>_mask` or `shot_<name>_mask` | same | Multiply by a mask. Directory masks are read as `<dir_scratch>/shot_<sid>_mask.bin` under the supplied directory |
-| `adaptive_mute` | `shot_<name>_adaptive_mute_x`, `shot_<name>_adaptive_mute_z` | not available | Taper outside the source-receiver aperture in x/z |
+| `mask` | `dir_shot_<name>_mask` or `shot_<name>_mask` | same | Multiply by a mask. Directory masks are read as `<dir_scratch>/shot_<sid>_mask.bin` under the supplied directory. Without either parameter, `mask` has no effect |
+| `adaptive_mute` | `shot_<name>_adaptive_mute_x` | `shot_<name>_adaptive_mute_x`, `shot_<name>_adaptive_mute_y` | Keep the gradient within the horizontal range of the sources and the receivers with nonzero weights, and taper it to zero over the given length outside that range; a negative length (default) turns off the taper along that axis |
 | `cone_mute` | `shot_<name>_cone_mute_x`, `shot_<name>_cone_mute_z`, `shot_<name>_cone_mute_power`, `shot_<name>_cone_mute_taper` | not available | Cone-shaped mute below the source |
 
 #### > Global Gradient Processing
@@ -630,7 +630,7 @@ Available global gradient/search-direction processing steps:
 |------|----------------|----------------|-------------|
 | `scale` | `<name>_scale` (`1.0`) | same | Multiply by a scalar |
 | `max_balance` | none | not available | Normalize by maximum value |
-| `rms_balance` | none | none | Normalize by mean/RMS-style energy |
+| `rms_balance` | none | none | Normalize by mean/RMS-style energy; a zero gradient is left unchanged |
 | `rms_balance_x` | `<name>_rms_balance_x` (`dx`) | `<name>_rms_balance_x` (`dx`) | Sliding RMS normalization along x |
 | `rms_balance_y` | not available | `<name>_rms_balance_y` (`dy`) | Sliding RMS normalization along y |
 | `rms_balance_xy` | not available | `<name>_rms_balance_x`, `<name>_rms_balance_y` (`dx`, `dy`) | Sliding RMS normalization in x-y planes |
@@ -640,7 +640,7 @@ Available global gradient/search-direction processing steps:
 | `smooth` | `<name>_smooth_x`, `<name>_smooth_z` (`3*dx`, `3*dz`) | `<name>_smooth_x`, `<name>_smooth_y`, `<name>_smooth_z` (`3*dx`, `3*dy`, `3*dz`) | Gaussian smoothing |
 | `andf_filt` | `<name>_andf_smooth_x`, `<name>_andf_smooth_z`, `<name>_andf_powerm`, `<name>_andf_t`, `<name>_andf_sigma`, `<name>_andf_alpha`, `<name>_andf_beta`, `<name>_andf_aux`, `<name>_andf_coh` | `<name>_andf_smooth_x`, `<name>_andf_smooth_y`, `<name>_andf_smooth_z`, `<name>_andf_powerm`, `<name>_andf_t`, `<name>_andf_sigma`, `<name>_andf_alpha`, `<name>_andf_beta`, `<name>_andf_gamma`, `<name>_andf_aux`, `<name>_andf_coh`, `<name>_andf_rank_x`, `<name>_andf_rank_y`, `<name>_andf_rank_z` | Structure-oriented anisotropic-diffusion filtering; 3-D uses MPI-aware filtering |
 | `median_filt` | `<name>_median_filt_x`, `<name>_median_filt_z` (`dx`, `dz`) | `<name>_median_filt_x`, `<name>_median_filt_y`, `<name>_median_filt_z` (`dx`, `dy`, `dz`) | Median filtering |
-| `mask` | `<name>_mask` | same | Multiply by a model-sized mask |
+| `mask` | `<name>_mask` | same | Multiply by a model-sized mask; without `<name>_mask`, `mask` has no effect |
 
 Many global processing parameters are read with iteration-aware readers, so values can be changed by iteration when supported by the parameter-file syntax.
 

@@ -1,5 +1,5 @@
 !
-! © 2025. Triad National Security, LLC. All rights reserved.
+! © 2025-2026. Triad National Security, LLC. All rights reserved.
 !
 ! This program was produced under U.S. Government contract 89233218CNA000001
 ! for Los Alamos National Laboratory (LANL), which is operated by
@@ -547,6 +547,10 @@ contains
         real :: shot_w_medianfiltx, shot_w_medianfilty, shot_w_medianfiltz
         type(andf_param) :: param
         real :: shot_w_smoothx, shot_w_smoothy, shot_w_smoothz
+        real :: shot_w_adaptive_mutex, shot_w_adaptive_mutey
+        real :: recmin, recmax, srcmin, srcmax
+        integer :: lb, ub, px, l
+        real, allocatable, dimension(:) :: st, tp
         real, allocatable, dimension(:) :: wavenums, wamps, fkdips, fkdipamps
         real, allocatable, dimension(:, :, :) :: wmask
         character(len=32), allocatable, dimension(:) :: process_shot_w
@@ -580,7 +584,9 @@ contains
 
                 case ('rms_balance')
                     ! Normalize with shot image energy
-                    grd%array = grd%array/mean(grd%array, 2)
+                    if (mean(grd%array, 2) /= 0) then
+                        grd%array = grd%array/mean(grd%array, 2)
+                    end if
 
                 case ('moving_balance')
                     ! Moving balance
@@ -710,7 +716,11 @@ contains
                     else
                         file_mask = tidy(dir_mask)//'/'//tidy(shot_prefix)//'_mask.bin'
                     end if
-                    call prepare_model_single_parameter(wmask, 'mask', file_mask, update=.false.)
+                    if (file_mask /= '') then
+                        call prepare_model_single_parameter(wmask, 'mask', file_mask, update=.false.)
+                    else
+                        wmask = ones(nz, ny, nx)
+                    end if
                     call alloc_array(wmask, [1, shot_nz, 1, shot_ny, 1, shot_nx], &
                         source=wmask(shot_nzbeg:shot_nzend, shot_nybeg:shot_nyend, shot_nxbeg:shot_nxend))
                     grd%array = mask(grd%array, wmask)
@@ -731,6 +741,60 @@ contains
                     end if
                     grd%array = taper(grd%array, nint([shot_w_taperz/mdz, shot_w_tapery/mdy, shot_w_taperx/mdx]), &
                         ['blackman', 'blackman', 'blackman', 'blackman', 'blackman', 'blackman'])
+
+                case ('adaptive_mute')
+                    call readpar_float(file_parameter, 'shot_'//tidy(name)//'_adaptive_mute_x', shot_w_adaptive_mutex, -1.0)
+                    call readpar_float(file_parameter, 'shot_'//tidy(name)//'_adaptive_mute_y', shot_w_adaptive_mutey, -1.0)
+                    if (shot_w_adaptive_mutex >= 0) then
+                        ! find source-receiver widest possible range in x; as in set_adaptive_range,
+                        ! only receivers with nonzero weights count
+                        recmin = minval(gmtr(ishot)%recr(:)%x - grd%o3, mask=gmtr(ishot)%recr(:)%weight /= 0)
+                        recmax = maxval(gmtr(ishot)%recr(:)%x - grd%o3, mask=gmtr(ishot)%recr(:)%weight /= 0)
+                        srcmin = minval(gmtr(ishot)%srcr(:)%x - grd%o3)
+                        srcmax = maxval(gmtr(ishot)%srcr(:)%x - grd%o3)
+                        ! ... and their integer grid point positions in the computed gradient
+                        lb = nint(min(recmin, srcmin)/mdx + 1)
+                        ub = nint(max(recmax, srcmax)/mdx + 1)
+                        ! the taper length
+                        px = nint(shot_w_adaptive_mutex/mdx)
+                        ! create the taper
+                        call alloc_array(st, [lb, ub], pad=px)
+                        st = 1.0
+                        st = taper(st, [px, px], ['blackman', 'blackman'])
+                        ! put the taper in the whole x range, which can be longer than the taper
+                        call alloc_array(tp, [1, grd%n3])
+                        do l = lb - px, ub + px
+                            if (l >= 1 .and. l <= grd%n3) then
+                                tp(l) = st(l)
+                            end if
+                        end do
+                        ! restrict the gradient to the x range of the sources and receivers
+                        do l = 1, grd%n3
+                            grd%array(:, :, l) = grd%array(:, :, l)*tp(l)
+                        end do
+                    end if
+                    if (shot_w_adaptive_mutey >= 0) then
+                        ! the same in y
+                        recmin = minval(gmtr(ishot)%recr(:)%y - grd%o2, mask=gmtr(ishot)%recr(:)%weight /= 0)
+                        recmax = maxval(gmtr(ishot)%recr(:)%y - grd%o2, mask=gmtr(ishot)%recr(:)%weight /= 0)
+                        srcmin = minval(gmtr(ishot)%srcr(:)%y - grd%o2)
+                        srcmax = maxval(gmtr(ishot)%srcr(:)%y - grd%o2)
+                        lb = nint(min(recmin, srcmin)/mdy + 1)
+                        ub = nint(max(recmax, srcmax)/mdy + 1)
+                        px = nint(shot_w_adaptive_mutey/mdy)
+                        call alloc_array(st, [lb, ub], pad=px)
+                        st = 1.0
+                        st = taper(st, [px, px], ['blackman', 'blackman'])
+                        call alloc_array(tp, [1, grd%n2])
+                        do l = lb - px, ub + px
+                            if (l >= 1 .and. l <= grd%n2) then
+                                tp(l) = st(l)
+                            end if
+                        end do
+                        do l = 1, grd%n2
+                            grd%array(:, l, :) = grd%array(:, l, :)*tp(l)
+                        end do
+                    end if
 
             end select
 
@@ -944,8 +1008,12 @@ contains
                     w = return_normal(w)
 
                 case ('mask')
-                    call readpar_xstring(file_parameter, tidy(name)//'_mask', file_mask, file_mask, iter*1.0)
-                    call prepare_model_single_parameter(wmask, 'mask', file_mask, update=.false.)
+                    call readpar_xstring(file_parameter, tidy(name)//'_mask', file_mask, '', iter*1.0)
+                    if (file_mask /= '') then
+                        call prepare_model_single_parameter(wmask, 'mask', file_mask, update=.false.)
+                    else
+                        wmask = ones_like(w)
+                    end if
                     w = mask(w, wmask)
 
             end select
