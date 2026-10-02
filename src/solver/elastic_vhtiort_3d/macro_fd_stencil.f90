@@ -853,109 +853,109 @@ coef44*(vz(i, j, k + 4) - vz(i, j, k - 3)) \
 ! L = 3
 #ifdef _fdorder6_
 
-#define pdxxx_3 ( \
+#define pdxxx_stencil ( \
 coef31*(stressxx(i + 1, j, k) - stressxx(i, j, k)) + \
 coef32*(stressxx(i + 2, j, k) - stressxx(i - 1, j, k)) + \
 coef33*(stressxx(i + 3, j, k) - stressxx(i - 2, j, k)) \
 )
 
-#define pdyyy_3 ( \
+#define pdyyy_stencil ( \
 coef31*(stressyy(i, j + 1, k) - stressyy(i, j, k)) + \
 coef32*(stressyy(i, j + 2, k) - stressyy(i, j - 1, k)) + \
 coef33*(stressyy(i, j + 3, k) - stressyy(i, j - 2, k)) \
 )
 
-#define pdzzz_3 ( \
+#define pdzzz_stencil ( \
 coef31*(stresszz(i, j, k + 1) - stresszz(i, j, k)) + \
 coef32*(stresszz(i, j, k + 2) - stresszz(i, j, k - 1)) + \
 coef33*(stresszz(i, j, k + 3) - stresszz(i, j, k - 2)) \
 )
 
-#define pdxxy_3 ( \
+#define pdxxy_stencil ( \
 coef31*(stressxy(i + 1, j + 1, k) - stressxy(i, j + 1, k)) + \
 coef32*(stressxy(i + 2, j + 1, k) - stressxy(i - 1, j + 1, k)) + \
 coef33*(stressxy(i + 3, j + 1, k) - stressxy(i - 2, j + 1, k)) \
 )
 
-#define pdxxz_3 ( \
+#define pdxxz_stencil ( \
 coef31*(stressxz(i + 1, j, k + 1) - stressxz(i, j, k + 1)) + \
 coef32*(stressxz(i + 2, j, k + 1) - stressxz(i - 1, j, k + 1)) + \
 coef33*(stressxz(i + 3, j, k + 1) - stressxz(i - 2, j, k + 1)) \
 )
 
-#define pdyxy_3 ( \
+#define pdyxy_stencil ( \
 coef31*(stressxy(i + 1, j + 1, k) - stressxy(i + 1, j, k)) + \
 coef32*(stressxy(i + 1, j + 2, k) - stressxy(i + 1, j - 1, k)) + \
 coef33*(stressxy(i + 1, j + 3, k) - stressxy(i + 1, j - 2, k)) \
 )
 
-#define pdyyz_3 ( \
+#define pdyyz_stencil ( \
 coef31*(stressyz(i, j + 1, k + 1) - stressyz(i, j, k + 1)) + \
 coef32*(stressyz(i, j + 2, k + 1) - stressyz(i, j - 1, k + 1)) + \
 coef33*(stressyz(i, j + 3, k + 1) - stressyz(i, j - 2, k + 1)) \
 )
 
-#define pdzxz_3 ( \
+#define pdzxz_stencil ( \
 coef31*(stressxz(i + 1, j, k + 1) - stressxz(i + 1, j, k)) + \
 coef32*(stressxz(i + 1, j, k + 2) - stressxz(i + 1, j, k - 1)) + \
 coef33*(stressxz(i + 1, j, k + 3) - stressxz(i + 1, j, k - 2)) \
 )
 
-#define pdzyz_3 ( \
+#define pdzyz_stencil ( \
 coef31*(stressyz(i, j + 1, k + 1) - stressyz(i, j + 1, k)) + \
 coef32*(stressyz(i, j + 1, k + 2) - stressyz(i, j + 1, k - 1)) + \
 coef33*(stressyz(i, j + 1, k + 3) - stressyz(i, j + 1, k - 2)) \
 )
 
-#define pdxvx_3 ( \
+#define pdxvx_stencil ( \
 coef31*(vx(i + 1, j, k) - vx(i, j, k)) + \
 coef32*(vx(i + 2, j, k) - vx(i - 1, j, k)) + \
 coef33*(vx(i + 3, j, k) - vx(i - 2, j, k)) \
 )
 
-#define pdyvx_3 ( \
+#define pdyvx_stencil ( \
 coef31*(vx(i + 1, j + 1, k) - vx(i + 1, j, k)) + \
 coef32*(vx(i + 1, j + 2, k) - vx(i + 1, j - 1, k)) + \
 coef33*(vx(i + 1, j + 3, k) - vx(i + 1, j - 2, k)) \
 )
 
-#define pdzvx_3 ( \
+#define pdzvx_stencil ( \
 coef31*(vx(i + 1, j, k + 1) - vx(i + 1, j, k)) + \
 coef32*(vx(i + 1, j, k + 2) - vx(i + 1, j, k - 1)) + \
 coef33*(vx(i + 1, j, k + 3) - vx(i + 1, j, k - 2)) \
 )
 
-#define pdxvy_3 ( \
+#define pdxvy_stencil ( \
 coef31*(vy(i + 1, j + 1, k) - vy(i, j + 1, k)) + \
 coef32*(vy(i + 2, j + 1, k) - vy(i - 1, j + 1, k)) + \
 coef33*(vy(i + 3, j + 1, k) - vy(i - 2, j + 1, k)) \
 )
 
-#define pdyvy_3 ( \
+#define pdyvy_stencil ( \
 coef31*(vy(i, j + 1, k) - vy(i, j, k)) + \
 coef32*(vy(i, j + 2, k) - vy(i, j - 1, k)) + \
 coef33*(vy(i, j + 3, k) - vy(i, j - 2, k)) \
 )
 
-#define pdzvy_3 ( \
+#define pdzvy_stencil ( \
 coef31*(vy(i, j + 1, k + 1) - vy(i, j + 1, k)) + \
 coef32*(vy(i, j + 1, k + 2) - vy(i, j + 1, k - 1)) + \
 coef33*(vy(i, j + 1, k + 3) - vy(i, j + 1, k - 2)) \
 )
 
-#define pdxvz_3 ( \
+#define pdxvz_stencil ( \
 coef31*(vz(i + 1, j, k + 1) - vz(i, j, k + 1)) + \
 coef32*(vz(i + 2, j, k + 1) - vz(i - 1, j, k + 1)) + \
 coef33*(vz(i + 3, j, k + 1) - vz(i - 2, j, k + 1)) \
 )
 
-#define pdyvz_3 ( \
+#define pdyvz_stencil ( \
 coef31*(vz(i, j + 1, k + 1) - vz(i, j, k + 1)) + \
 coef32*(vz(i, j + 2, k + 1) - vz(i, j - 1, k + 1)) + \
 coef33*(vz(i, j + 3, k + 1) - vz(i, j - 2, k + 1)) \
 )
 
-#define pdzvz_3 ( \
+#define pdzvz_stencil ( \
 coef31*(vz(i, j, k + 1) - vz(i, j, k)) + \
 coef32*(vz(i, j, k + 2) - vz(i, j, k - 1)) + \
 coef33*(vz(i, j, k + 3) - vz(i, j, k - 2)) \
@@ -966,92 +966,92 @@ coef33*(vz(i, j, k + 3) - vz(i, j, k - 2)) \
 ! L = 2
 #ifdef _fdorder4_
 
-#define pdxxx_2 ( \
+#define pdxxx_stencil ( \
 coef21*(stressxx(i + 1, j, k) - stressxx(i, j, k)) + \
 coef22*(stressxx(i + 2, j, k) - stressxx(i - 1, j, k)) \
 )
 
-#define pdyyy_2 ( \
+#define pdyyy_stencil ( \
 coef21*(stressyy(i, j + 1, k) - stressyy(i, j, k)) + \
 coef22*(stressyy(i, j + 2, k) - stressyy(i, j - 1, k)) \
 )
 
-#define pdzzz_2 ( \
+#define pdzzz_stencil ( \
 coef21*(stresszz(i, j, k + 1) - stresszz(i, j, k)) + \
 coef22*(stresszz(i, j, k + 2) - stresszz(i, j, k - 1)) \
 )
 
-#define pdxxy_2 ( \
+#define pdxxy_stencil ( \
 coef21*(stressxy(i + 1, j + 1, k) - stressxy(i, j + 1, k)) + \
 coef22*(stressxy(i + 2, j + 1, k) - stressxy(i - 1, j + 1, k)) \
 )
 
-#define pdxxz_2 ( \
+#define pdxxz_stencil ( \
 coef21*(stressxz(i + 1, j, k + 1) - stressxz(i, j, k + 1)) + \
 coef22*(stressxz(i + 2, j, k + 1) - stressxz(i - 1, j, k + 1)) \
 )
 
-#define pdyxy_2 ( \
+#define pdyxy_stencil ( \
 coef21*(stressxy(i + 1, j + 1, k) - stressxy(i + 1, j, k)) + \
 coef22*(stressxy(i + 1, j + 2, k) - stressxy(i + 1, j - 1, k)) \
 )
 
-#define pdyyz_2 ( \
+#define pdyyz_stencil ( \
 coef21*(stressyz(i, j + 1, k + 1) - stressyz(i, j, k + 1)) + \
 coef22*(stressyz(i, j + 2, k + 1) - stressyz(i, j - 1, k + 1)) \
 )
 
-#define pdzxz_2 ( \
+#define pdzxz_stencil ( \
 coef21*(stressxz(i + 1, j, k + 1) - stressxz(i + 1, j, k)) + \
 coef22*(stressxz(i + 1, j, k + 2) - stressxz(i + 1, j, k - 1)) \
 )
 
-#define pdzyz_2 ( \
+#define pdzyz_stencil ( \
 coef21*(stressyz(i, j + 1, k + 1) - stressyz(i, j + 1, k)) + \
 coef22*(stressyz(i, j + 1, k + 2) - stressyz(i, j + 1, k - 1)) \
 )
 
-#define pdxvx_2 ( \
+#define pdxvx_stencil ( \
 coef21*(vx(i + 1, j, k) - vx(i, j, k)) + \
 coef22*(vx(i + 2, j, k) - vx(i - 1, j, k)) \
 )
 
-#define pdyvx_2 ( \
+#define pdyvx_stencil ( \
 coef21*(vx(i + 1, j + 1, k) - vx(i + 1, j, k)) + \
 coef22*(vx(i + 1, j + 2, k) - vx(i + 1, j - 1, k)) \
 )
 
-#define pdzvx_2 ( \
+#define pdzvx_stencil ( \
 coef21*(vx(i + 1, j, k + 1) - vx(i + 1, j, k)) + \
 coef22*(vx(i + 1, j, k + 2) - vx(i + 1, j, k - 1)) \
 )
 
-#define pdxvy_2 ( \
+#define pdxvy_stencil ( \
 coef21*(vy(i + 1, j + 1, k) - vy(i, j + 1, k)) + \
 coef22*(vy(i + 2, j + 1, k) - vy(i - 1, j + 1, k)) \
 )
 
-#define pdyvy_2 ( \
+#define pdyvy_stencil ( \
 coef21*(vy(i, j + 1, k) - vy(i, j, k)) + \
 coef22*(vy(i, j + 2, k) - vy(i, j - 1, k)) \
 )
 
-#define pdzvy_2 ( \
+#define pdzvy_stencil ( \
 coef21*(vy(i, j + 1, k + 1) - vy(i, j + 1, k)) + \
 coef22*(vy(i, j + 1, k + 2) - vy(i, j + 1, k - 1)) \
 )
 
-#define pdxvz_2 ( \
+#define pdxvz_stencil ( \
 coef21*(vz(i + 1, j, k + 1) - vz(i, j, k + 1)) + \
 coef22*(vz(i + 2, j, k + 1) - vz(i - 1, j, k + 1)) \
 )
 
-#define pdyvz_2 ( \
+#define pdyvz_stencil ( \
 coef21*(vz(i, j + 1, k + 1) - vz(i, j, k + 1)) + \
 coef22*(vz(i, j + 2, k + 1) - vz(i, j - 1, k + 1)) \
 )
 
-#define pdzvz_2 ( \
+#define pdzvz_stencil ( \
 coef21*(vz(i, j, k + 1) - vz(i, j, k)) + \
 coef22*(vz(i, j, k + 2) - vz(i, j, k - 1)) \
 )
@@ -1061,40 +1061,40 @@ coef22*(vz(i, j, k + 2) - vz(i, j, k - 1)) \
 ! L = 1
 #ifdef _fdorder2_
 
-#define pdxxx_1 (stressxx(i + 1, j, k) - stressxx(i, j, k))
+#define pdxxx_stencil (stressxx(i + 1, j, k) - stressxx(i, j, k))
 
-#define pdyyy_1 (stressyy(i, j + 1, k) - stressyy(i, j, k))
+#define pdyyy_stencil (stressyy(i, j + 1, k) - stressyy(i, j, k))
 
-#define pdzzz_1 (stresszz(i, j, k + 1) - stresszz(i, j, k))
+#define pdzzz_stencil (stresszz(i, j, k + 1) - stresszz(i, j, k))
 
-#define pdxxy_1 (stressxy(i + 1, j + 1, k) - stressxy(i, j + 1, k))
+#define pdxxy_stencil (stressxy(i + 1, j + 1, k) - stressxy(i, j + 1, k))
 
-#define pdxxz_1 (stressxz(i + 1, j, k + 1) - stressxz(i, j, k + 1))
+#define pdxxz_stencil (stressxz(i + 1, j, k + 1) - stressxz(i, j, k + 1))
 
-#define pdyxy_1 (stressxy(i + 1, j + 1, k) - stressxy(i + 1, j, k))
+#define pdyxy_stencil (stressxy(i + 1, j + 1, k) - stressxy(i + 1, j, k))
 
-#define pdyyz_1 (stressyz(i, j + 1, k + 1) - stressyz(i, j, k + 1))
+#define pdyyz_stencil (stressyz(i, j + 1, k + 1) - stressyz(i, j, k + 1))
 
-#define pdzxz_1 (stressxz(i + 1, j, k + 1) - stressxz(i + 1, j, k))
+#define pdzxz_stencil (stressxz(i + 1, j, k + 1) - stressxz(i + 1, j, k))
 
-#define pdzyz_1 (stressyz(i, j + 1, k + 1) - stressyz(i, j + 1, k))
+#define pdzyz_stencil (stressyz(i, j + 1, k + 1) - stressyz(i, j + 1, k))
 
-#define pdxvx_1 (vx(i + 1, j, k) - vx(i, j, k))
+#define pdxvx_stencil (vx(i + 1, j, k) - vx(i, j, k))
 
-#define pdyvx_1 (vx(i + 1, j + 1, k) - vx(i + 1, j, k))
+#define pdyvx_stencil (vx(i + 1, j + 1, k) - vx(i + 1, j, k))
 
-#define pdzvx_1 (vx(i + 1, j, k + 1) - vx(i + 1, j, k))
+#define pdzvx_stencil (vx(i + 1, j, k + 1) - vx(i + 1, j, k))
 
-#define pdxvy_1 (vy(i + 1, j + 1, k) - vy(i, j + 1, k))
+#define pdxvy_stencil (vy(i + 1, j + 1, k) - vy(i, j + 1, k))
 
-#define pdyvy_1 (vy(i, j + 1, k) - vy(i, j, k))
+#define pdyvy_stencil (vy(i, j + 1, k) - vy(i, j, k))
 
-#define pdzvy_1 (vy(i, j + 1, k + 1) - vy(i, j + 1, k))
+#define pdzvy_stencil (vy(i, j + 1, k + 1) - vy(i, j + 1, k))
 
-#define pdxvz_1 (vz(i + 1, j, k + 1) - vz(i, j, k + 1))
+#define pdxvz_stencil (vz(i + 1, j, k + 1) - vz(i, j, k + 1))
 
-#define pdyvz_1 (vz(i, j + 1, k + 1) - vz(i, j, k + 1))
+#define pdyvz_stencil (vz(i, j + 1, k + 1) - vz(i, j, k + 1))
 
-#define pdzvz_1 (vz(i, j, k + 1) - vz(i, j, k))
+#define pdzvz_stencil (vz(i, j, k + 1) - vz(i, j, k))
 
 #endif

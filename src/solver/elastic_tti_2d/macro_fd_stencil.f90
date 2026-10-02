@@ -115,11 +115,11 @@
 ! L=3
 #ifdef _fdorder6_
 
-#define pdxw_3(w, i, j) (coef31*(w(i + 1, j) - w(i, j)) \
+#define pdxw_stencil(w, i, j) (coef31*(w(i + 1, j) - w(i, j)) \
 +coef32*(w(i + 2, j) - w(i - 1, j)) \
 +coef33*(w(i + 3, j) - w(i - 2, j)))
 
-#define pdzw_3(w, i, j) (coef31*(w(i, j + 1) - w(i, j)) \
+#define pdzw_stencil(w, i, j) (coef31*(w(i, j + 1) - w(i, j)) \
 +coef32*(w(i, j + 2) - w(i, j - 1)) \
 +coef33*(w(i, j + 3) - w(i, j - 2)))
 
@@ -128,10 +128,10 @@
 ! L=2
 #ifdef _fdorder4_
 
-#define pdxw_2(w, i, j) (coef21*(w(i + 1, j) - w(i, j)) \
+#define pdxw_stencil(w, i, j) (coef21*(w(i + 1, j) - w(i, j)) \
 +coef22*(w(i + 2, j) - w(i - 1, j)))
 
-#define pdzw_2(w, i, j) (coef21*(w(i, j + 1) - w(i, j)) \
+#define pdzw_stencil(w, i, j) (coef21*(w(i, j + 1) - w(i, j)) \
 +coef22*(w(i, j + 2) - w(i, j - 1)))
 
 #endif
@@ -139,8 +139,8 @@
 ! L=1
 #ifdef _fdorder2_
 
-#define pdxw_1(w, i, j) (w(i + 1, j) - w(i, j))
+#define pdxw_stencil(w, i, j) (w(i + 1, j) - w(i, j))
 
-#define pdzw_1(w, i, j) (w(i, j + 1) - w(i, j))
+#define pdzw_stencil(w, i, j) (w(i, j + 1) - w(i, j))
 
 #endif

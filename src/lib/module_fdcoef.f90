@@ -118,7 +118,7 @@ module mod_fdcoef
 
 #ifdef _fdorder2_
     integer, parameter :: fdhalf = 1
-    real, parameter, dimension(1:1) :: fcoefs = [0.5]
+    real, parameter, dimension(1:1) :: fdcoefs = [1.0]
 #endif
 
 end module
