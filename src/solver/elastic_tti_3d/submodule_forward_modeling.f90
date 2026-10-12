@@ -24,6 +24,9 @@ submodule(elastic_tti_3d) elastic_tti_3d_forward_modeling
     use elastic_tti_3d_boundary_saving
     use elastic_tti_3d_wavefield
     use elastic_tti_3d_cfspml
+#ifdef _use_hdf5_io_
+    use mod_utility, only: output_snapshot_hdf5, output_snapshot_curvilinear_hdf5
+#endif
 
     implicit none
 
@@ -279,6 +282,19 @@ contains
 
                         if (rankid_group == 0) then
 
+#ifdef _use_hdf5_io_
+                            call output_snapshot_curvilinear_hdf5(tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_forward_wavefield_curvilinear_' &
+                                //num2str(l)//'.h5', &
+                                [((i - 1)*dx + ox, i = -pml + 1, nx + pml)], &
+                                [((j - 1)*dy + oy, j = -pml + 1, ny + pml)], &
+                                permute(zz_i(-pml + 1:nx + pml, -pml + 1:ny + pml, 1:nz + pml), 321), &
+                                permute(snapvx(-pml + 1:nx + pml, -pml + 1:ny + pml, 1:nz + pml), 321), &
+                                permute(snapvy(-pml + 1:nx + pml, -pml + 1:ny + pml, 1:nz + pml), 321), &
+                                permute(snapvz(-pml + 1:nx + pml, -pml + 1:ny + pml, 1:nz + pml), 321), &
+                                (t - 1)*dt)
+#else
                             open(3, file=tidy(dir_snapshot)//'/shot_' &
                                 //num2str(sgmtr%id) &
                                 //'_forward_wavefield_' &
@@ -292,11 +308,27 @@ contains
                                 snapvy(:, :, 1:nz + pml), &
                                 snapvz(:, :, 1:nz + pml)
                             close(3)
+#endif
 
                             call map_irregular_to_regular(snapvx, this, [1, this%nx, 1, this%ny, 1, this%nz])
                             call map_irregular_to_regular(snapvy, this, [1, this%nx, 1, this%ny, 1, this%nz])
                             call map_irregular_to_regular(snapvz, this, [1, this%nx, 1, this%ny, 1, this%nz])
 
+#ifdef _use_hdf5_io_
+                            call output_snapshot_hdf5(tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_forward_wavefield_' &
+                                //num2str(l)//'.h5', 'vx', permute(snapvx, 321), &
+                                [this%nz, this%ny, this%nx], [this%dz, dy, dx], [-topo_max, oy, ox], (t - 1)*dt)
+                            call output_snapshot_hdf5(tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_forward_wavefield_' &
+                                //num2str(l)//'.h5', 'vy', permute(snapvy, 321), append=.true.)
+                            call output_snapshot_hdf5(tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_forward_wavefield_' &
+                                //num2str(l)//'.h5', 'vz', permute(snapvz, 321), append=.true.)
+#else
                             call output_array(snapvx, tidy(dir_snapshot)//'/shot_' &
                                 //num2str(sgmtr%id) &
                                 //'_forward_wavefield_x_' &
@@ -309,6 +341,7 @@ contains
                                 //num2str(sgmtr%id) &
                                 //'_forward_wavefield_z_' &
                                 //num2str(l)//'.bin', store=321)
+#endif
 
                         end if
 
@@ -352,6 +385,21 @@ contains
 
                         ! Output
                         if (rankid_group == 0) then
+#ifdef _use_hdf5_io_
+                            call output_snapshot_hdf5(tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_forward_wavefield_' &
+                                //num2str(l)//'.h5', 'vx', permute(snapvx(1:nx, 1:ny, 1:nz), 321), &
+                                [nz, ny, nx], [dz, dy, dx], [oz, oy, ox], (t - 1)*dt)
+                            call output_snapshot_hdf5(tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_forward_wavefield_' &
+                                //num2str(l)//'.h5', 'vy', permute(snapvy(1:nx, 1:ny, 1:nz), 321), append=.true.)
+                            call output_snapshot_hdf5(tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_forward_wavefield_' &
+                                //num2str(l)//'.h5', 'vz', permute(snapvz(1:nx, 1:ny, 1:nz), 321), append=.true.)
+#else
                             call output_array(snapvx(1:nx, 1:ny, 1:nz), tidy(dir_snapshot)//'/shot_' &
                                 //num2str(sgmtr%id) &
                                 //'_forward_wavefield_x_' &
@@ -364,6 +412,7 @@ contains
                                 //num2str(sgmtr%id) &
                                 //'_forward_wavefield_z_' &
                                 //num2str(l)//'.bin', store=321)
+#endif
                         end if
 
                     end if
@@ -604,9 +653,11 @@ contains
         !   Equations C-7 -- C-9
         if (this%receiver_vertical_to_surface) then
 
-            rec_slopex = ginterp(topox, topoy, flatten(slopex_ixhy), sgmtr%recr(:)%x, sgmtr%recr(:)%y)
+            ! Surface slopes at the receivers, from the integer grid points (topox, topoy of
+            ! prepare_modeling)
+            rec_slopex = ginterp(topox, topoy, flatten(slopex_ixiy), sgmtr%recr(:)%x, sgmtr%recr(:)%y)
             rec_slopex = atan(rec_slopex)
-            rec_slopey = ginterp(topox, topoy, flatten(slopey_ixhy), sgmtr%recr(:)%x, sgmtr%recr(:)%y)
+            rec_slopey = ginterp(topox, topoy, flatten(slopey_ixiy), sgmtr%recr(:)%x, sgmtr%recr(:)%y)
             rec_slopey = atan(rec_slopey*cos(rec_slopex))
 
             ! z positive direction points downward
@@ -626,13 +677,13 @@ contains
                         cos(rec_slopey(i)), &
                         -sin(rec_slopey(i)), &
                         sin(rec_slopex(i)), &
-                        cos(rec_slopex(i))*sin(rec_slopey), &
-                        cos(rec_slopex(i))*cos(rec_slopey)], [3, 3]), &
-                        [seis_vx(t, ir), seis_vy(t, ir), seis_vz(t, ir)])
+                        cos(rec_slopex(i))*sin(rec_slopey(i)), &
+                        cos(rec_slopex(i))*cos(rec_slopey(i))], [3, 3]), &
+                        [seis_vx(t, i), seis_vy(t, i), seis_vz(t, i)])
 
-                    seis_vx(t, ir) = pt(1)
-                    seis_vy(t, ir) = pt(2)
-                    seis_vz(t, ir) = pt(3)
+                    seis_vx(t, i) = pt(1)
+                    seis_vy(t, i) = pt(2)
+                    seis_vz(t, i) = pt(3)
 
                 end do
             end do

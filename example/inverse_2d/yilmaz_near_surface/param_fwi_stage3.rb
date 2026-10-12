@@ -45,7 +45,7 @@ dp_freq_filt_coefs = 0.0, 1.0, 1.0, 0.0
 grad_smooth_x = 1:5.0, 50:2.5
 grad_smooth_z = 0.5
 misfit_type = corr
-file_vs = ./test_s2/iteration_30/model/updated_vs.bin
+file_vs = ./test_s2/iteration_25/model/updated_vs.bin
 dir_working = test_s3
 
 

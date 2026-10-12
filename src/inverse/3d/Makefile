@@ -1,5 +1,5 @@
 #
-# © 2025. Triad National Security, LLC. All rights reserved.
+# © 2025-2026. Triad National Security, LLC. All rights reserved.
 #
 # This program was produced under U.S. Government contract 89233218CNA000001
 # for Los Alamos National Laboratory (LANL), which is operated by
@@ -85,16 +85,24 @@ exec = $(bindir)/owl_fwi3
 
 all: makedir $(exec)
 
-# options
-# _fdorder*_ can be 2, 4, ..., 14, 16
-flitdir = $(HOME)/src/flit
+# options, set by install.rb (ruby install.rb fdorder=8 hdf5io=yes) or on the make command line
+#     fdorder: order of the finite-difference stencils, 2, 4, ..., 14, 16 (default 16)
+#     hdf5io: yes for the HDF5 I/O of models, wavefield snapshots and inversion models (default no)
+#     flitdir: the FLIT directory (default $(HOME)/src/flit)
+fdorder ?= 16
+hdf5io ?= no
+flitdir ?= $(HOME)/src/flit
 
 include $(flitdir)/src/Makefile.in
 inc = $(base_inc) -I$(flitdir)/lib
 lflags = $(flitdir)/lib/libflit.a $(base_lflags)
 fflags = $(base_fflags) \
-	-D_dim3_ -D_fwi_ -D_fdorder16_ \
+	-D_dim3_ -D_fwi_ -D_fdorder$(fdorder)_ \
 	# -O0 -g -check bounds -fpe:0 -init=snan
+
+ifeq ($(hdf5io), yes)
+fflags += -D_use_hdf5_io_
+endif
 
 # compile
 $(objdir)/c/%.o : $(PWD)/../../lib/%.f90

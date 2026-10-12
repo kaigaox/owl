@@ -2,7 +2,7 @@
 """
 OWL correctness unit tests – master runner.
 
-Runs all nine tests and produces a summary figure.
+Runs all ten tests and produces a summary figure.
 
 Usage:
     cd test/
@@ -37,6 +37,7 @@ TEST_DEFS = [
     ('test_elastic_lamb',      'Test 7',  'Elastic Lamb problem\non a tilted surface'),
     ('test_elastic_analytic',  'Test 8',  'Elastic analytic\nwholespace response'),
     ('test_free_surface',      'Test 9',  'Free surface: sources\nand receivers near it'),
+    ('test_acoustic_free_surface', 'Test 10', 'Acoustic free surface\nvs analytical half-space'),
 ]
 
 results = []   # list of (name, short, passed, elapsed, detail)

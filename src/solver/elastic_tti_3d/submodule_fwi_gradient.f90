@@ -24,6 +24,9 @@ submodule(elastic_tti_3d) elastic_tti_3d_fwi_gradient
     use elastic_tti_3d_boundary_saving
     use elastic_tti_3d_wavefield
     use mod_anisotropy
+#ifdef _use_hdf5_io_
+    use mod_utility, only: output_snapshot_hdf5, output_snapshot_curvilinear_hdf5
+#endif
 
     implicit none
 
@@ -484,7 +487,7 @@ contains
                 call inject_boundary_wavefield(t)
 
                 ! Record wavefield snapshot if necessary
-                if (np /= 0 .and. l <= np) then
+                if (np /= 0 .and. l >= 1) then
                     if (t - 1 == nint(snaps(l)/dt)) then
 
                         call commute_array_group(vx_hxiyiz, fdhalf)
@@ -540,7 +543,20 @@ contains
 
                             if (rankid_group == 0) then
 
-                                open(3, file=tidy(dir_snapshot)//'/shot_' &
+#ifdef _use_hdf5_io_
+                                call output_snapshot_curvilinear_hdf5(tidy(dir_working)//'/shot_' &
+                                    //num2str(sgmtr%id) &
+                                    //'_reconstructed_wavefield_curvilinear_' &
+                                    //num2str(l)//'.h5', &
+                                    [((i - 1)*dx + ox, i = -pml + 1, nx + pml)], &
+                                    [((j - 1)*dy + oy, j = -pml + 1, ny + pml)], &
+                                    permute(zz_i(-pml + 1:nx + pml, -pml + 1:ny + pml, 1:nz + pml), 321), &
+                                    permute(snapvx(-pml + 1:nx + pml, -pml + 1:ny + pml, 1:nz + pml), 321), &
+                                    permute(snapvy(-pml + 1:nx + pml, -pml + 1:ny + pml, 1:nz + pml), 321), &
+                                    permute(snapvz(-pml + 1:nx + pml, -pml + 1:ny + pml, 1:nz + pml), 321), &
+                                    (t - 1)*dt)
+#else
+                                open(3, file=tidy(dir_working)//'/shot_' &
                                     //num2str(sgmtr%id) &
                                     //'_reconstructed_wavefield_' &
                                     //num2str(l)//'.txt')
@@ -553,23 +569,40 @@ contains
                                     end do
                                 end do
                                 close(3)
+#endif
 
                                 call map_irregular_to_regular(snapvx, this, [1, this%nx, 1, this%ny, 1, this%nz])
                                 call map_irregular_to_regular(snapvy, this, [1, this%nx, 1, this%ny, 1, this%nz])
                                 call map_irregular_to_regular(snapvz, this, [1, this%nx, 1, this%ny, 1, this%nz])
 
-                                call output_array(snapvx, tidy(dir_snapshot)//'/shot_' &
+#ifdef _use_hdf5_io_
+                                call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                                    //num2str(sgmtr%id) &
+                                    //'_reconstructed_wavefield_' &
+                                    //num2str(l)//'.h5', 'vx', permute(snapvx, 321), &
+                                    [this%nz, this%ny, this%nx], [this%dz, dy, dx], [-topo_max, oy, ox], (t - 1)*dt)
+                                call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                                    //num2str(sgmtr%id) &
+                                    //'_reconstructed_wavefield_' &
+                                    //num2str(l)//'.h5', 'vy', permute(snapvy, 321), append=.true.)
+                                call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                                    //num2str(sgmtr%id) &
+                                    //'_reconstructed_wavefield_' &
+                                    //num2str(l)//'.h5', 'vz', permute(snapvz, 321), append=.true.)
+#else
+                                call output_array(snapvx, tidy(dir_working)//'/shot_' &
                                     //num2str(sgmtr%id) &
                                     //'_reconstructed_wavefield_x_' &
                                     //num2str(l)//'.bin', store=321)
-                                call output_array(snapvy, tidy(dir_snapshot)//'/shot_' &
+                                call output_array(snapvy, tidy(dir_working)//'/shot_' &
                                     //num2str(sgmtr%id) &
                                     //'_reconstructed_wavefield_y_' &
                                     //num2str(l)//'.bin', store=321)
-                                call output_array(snapvz, tidy(dir_snapshot)//'/shot_' &
+                                call output_array(snapvz, tidy(dir_working)//'/shot_' &
                                     //num2str(sgmtr%id) &
                                     //'_reconstructed_wavefield_z_' &
                                     //num2str(l)//'.bin', store=321)
+#endif
 
                             end if
 
@@ -613,18 +646,34 @@ contains
 
                             ! Output
                             if (rankid_group == 0) then
-                                call output_array(snapvx(1:nx, 1:ny, 1:nz), tidy(dir_snapshot)//'/shot_' &
+#ifdef _use_hdf5_io_
+                                call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                                    //num2str(sgmtr%id) &
+                                    //'_reconstructed_wavefield_' &
+                                    //num2str(l)//'.h5', 'vx', permute(snapvx(1:nx, 1:ny, 1:nz), 321), &
+                                    [nz, ny, nx], [dz, dy, dx], [oz, oy, ox], (t - 1)*dt)
+                                call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                                    //num2str(sgmtr%id) &
+                                    //'_reconstructed_wavefield_' &
+                                    //num2str(l)//'.h5', 'vy', permute(snapvy(1:nx, 1:ny, 1:nz), 321), append=.true.)
+                                call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                                    //num2str(sgmtr%id) &
+                                    //'_reconstructed_wavefield_' &
+                                    //num2str(l)//'.h5', 'vz', permute(snapvz(1:nx, 1:ny, 1:nz), 321), append=.true.)
+#else
+                                call output_array(snapvx(1:nx, 1:ny, 1:nz), tidy(dir_working)//'/shot_' &
                                     //num2str(sgmtr%id) &
                                     //'_reconstructed_wavefield_x_' &
                                     //num2str(l)//'.bin', store=321)
-                                call output_array(snapvy(1:nx, 1:ny, 1:nz), tidy(dir_snapshot)//'/shot_' &
+                                call output_array(snapvy(1:nx, 1:ny, 1:nz), tidy(dir_working)//'/shot_' &
                                     //num2str(sgmtr%id) &
                                     //'_reconstructed_wavefield_y_' &
                                     //num2str(l)//'.bin', store=321)
-                                call output_array(snapvz(1:nx, 1:ny, 1:nz), tidy(dir_snapshot)//'/shot_' &
+                                call output_array(snapvz(1:nx, 1:ny, 1:nz), tidy(dir_working)//'/shot_' &
                                     //num2str(sgmtr%id) &
                                     //'_reconstructed_wavefield_z_' &
                                     //num2str(l)//'.bin', store=321)
+#endif
                             end if
 
                         end if

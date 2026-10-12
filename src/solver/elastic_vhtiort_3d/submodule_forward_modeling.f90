@@ -24,6 +24,9 @@ submodule(elastic_vhtiort_3d) elastic_vhtiort_3d_forward_modeling
     use elastic_vhtiort_3d_boundary_saving
     use elastic_vhtiort_3d_wavefield
     use elastic_vhtiort_3d_cfspml
+#ifdef _use_hdf5_io_
+    use mod_utility, only: output_snapshot_hdf5
+#endif
 
     implicit none
 
@@ -182,6 +185,21 @@ contains
                             call map_irregular_to_regular(snapvy, this, [1, this%nx, 1, this%ny, 1, this%nz])
                             call map_irregular_to_regular(snapvz, this, [1, this%nx, 1, this%ny, 1, this%nz])
 
+#ifdef _use_hdf5_io_
+                            call output_snapshot_hdf5(tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_forward_wavefield_' &
+                                //num2str(l)//'.h5', 'vx', permute(snapvx, 321), &
+                                [this%nz, this%ny, this%nx], [dz, dy, dx], [oz, oy, ox], (t - 1)*dt)
+                            call output_snapshot_hdf5(tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_forward_wavefield_' &
+                                //num2str(l)//'.h5', 'vy', permute(snapvy, 321), append=.true.)
+                            call output_snapshot_hdf5(tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_forward_wavefield_' &
+                                //num2str(l)//'.h5', 'vz', permute(snapvz, 321), append=.true.)
+#else
                             call output_array(snapvx, tidy(dir_snapshot)//'/shot_' &
                                 //num2str(sgmtr%id) &
                                 //'_forward_wavefield_x_' &
@@ -194,6 +212,7 @@ contains
                                 //num2str(sgmtr%id) &
                                 //'_forward_wavefield_z_' &
                                 //num2str(l)//'.bin', store=321)
+#endif
 
                         end if
 
@@ -217,6 +236,21 @@ contains
 
                         ! Output
                         if (rankid_group == 0) then
+#ifdef _use_hdf5_io_
+                            call output_snapshot_hdf5(tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_forward_wavefield_' &
+                                //num2str(l)//'.h5', 'vx', permute(snapvx(1:nx, 1:ny, 1:nz), 321), &
+                                [this%nz, this%ny, this%nx], [dz, dy, dx], [oz, oy, ox], (t - 1)*dt)
+                            call output_snapshot_hdf5(tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_forward_wavefield_' &
+                                //num2str(l)//'.h5', 'vy', permute(snapvy(1:nx, 1:ny, 1:nz), 321), append=.true.)
+                            call output_snapshot_hdf5(tidy(dir_snapshot)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_forward_wavefield_' &
+                                //num2str(l)//'.h5', 'vz', permute(snapvz(1:nx, 1:ny, 1:nz), 321), append=.true.)
+#else
                             call output_array(snapvx(1:nx, 1:ny, 1:nz), tidy(dir_snapshot)//'/shot_' &
                                 //num2str(sgmtr%id) &
                                 //'_forward_wavefield_x_' &
@@ -229,6 +263,7 @@ contains
                                 //num2str(sgmtr%id) &
                                 //'_forward_wavefield_z_' &
                                 //num2str(l)//'.bin', store=321)
+#endif
                         end if
 
                     end if

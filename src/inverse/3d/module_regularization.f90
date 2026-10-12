@@ -1,5 +1,5 @@
 !
-! © 2025. Triad National Security, LLC. All rights reserved.
+! © 2025-2026. Triad National Security, LLC. All rights reserved.
 !
 ! This program was produced under U.S. Government contract 89233218CNA000001
 ! for Los Alamos National Laboratory (LANL), which is operated by
@@ -276,7 +276,12 @@ contains
 
         ! Output regularized model
         if (rankid == 0) then
+#ifdef _use_hdf5_io_
+            call output_model_hdf5(dir_iter_model(iter)//'/reg_'//tidy(name)//'.h5', tidy(name), mr, &
+                [nz, ny, nx], [dz, dy, dx], [oz, oy, ox])
+#else
             call output_array(mr, dir_iter_model(iter)//'/reg_'//tidy(name)//'.bin')
+#endif
         end if
 
     end subroutine

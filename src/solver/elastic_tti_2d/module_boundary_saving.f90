@@ -1,5 +1,5 @@
 !
-! © 2025. Triad National Security, LLC. All rights reserved.
+! © 2025-2026. Triad National Security, LLC. All rights reserved.
 !
 ! This program was produced under U.S. Government contract 89233218CNA000001
 ! for Los Alamos National Laboratory (LANL), which is operated by
@@ -84,7 +84,7 @@ contains
 
         read (funit) &
             vx_hxiz, vx_ixhz, &
-            vz_hxiz, vz_hxiz, &
+            vz_hxiz, vz_ixhz, &
             stressxx_ixiz, stressxx_hxhz, &
             stresszz_ixiz, stresszz_hxhz, &
             stressxz_ixiz, stressxz_hxhz

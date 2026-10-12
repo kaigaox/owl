@@ -92,6 +92,8 @@ program test
     ! FWI geometry
     call make_directory('./geometry_fwi')
 
+    call copy_file('./wavelet.txt', './geometry_fwi/wavelet.txt')
+
     open(3, file='./geometry_fwi/geometry.txt')
     do i = 1, 49
 

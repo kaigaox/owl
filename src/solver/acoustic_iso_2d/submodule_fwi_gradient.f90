@@ -23,6 +23,9 @@ submodule(acoustic_iso_2d) acoustic_iso_2d_fwi_gradient
     use acoustic_iso_2d_vars
     use acoustic_iso_2d_boundary_saving
     use acoustic_iso_2d_wavefield
+#ifdef _use_hdf5_io_
+    use mod_utility, only: output_snapshot_hdf5
+#endif
 
     implicit none
 
@@ -111,10 +114,18 @@ contains
             if (np /= 0 .and. l >= 1) then
                 if (t - 1 == nint(snaps(l)/dt)) then
 
+#ifdef _use_hdf5_io_
+                    call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                        //num2str(sgmtr%id) &
+                        //'_reconstructed_wavefield_' &
+                        //num2str(l)//'.h5', 'p', transpose(p(1:nx, 1:nz)), &
+                        [nz, 1, nx], [dz, 1.0, dx], [oz, 0.0, ox], (t - 1)*dt)
+#else
                     call output_array(p(1:nx, 1:nz), tidy(dir_working)//'/shot_' &
                         //num2str(sgmtr%id) &
                         //'_reconstructed_wavefield_p_' &
                         //num2str(l)//'.bin', transp=.true.)
+#endif
 
                     l = l - 1
                 end if

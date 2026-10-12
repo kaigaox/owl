@@ -23,6 +23,9 @@ submodule(acoustic_iso_3d) acoustic_iso_3d_fwi_gradient
     use acoustic_iso_3d_vars
     use acoustic_iso_3d_boundary_saving
     use acoustic_iso_3d_wavefield
+#ifdef _use_hdf5_io_
+    use mod_utility, only: output_snapshot_hdf5
+#endif
 
     implicit none
 
@@ -160,10 +163,18 @@ contains
                     call reduce_array_group(snapp)
 
                     if (rankid_group == 0) then
+#ifdef _use_hdf5_io_
+                        call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                            //num2str(sgmtr%id) &
+                            //'_reconstructed_wavefield_' &
+                            //num2str(l)//'.h5', 'p', permute(snapp(1:nx, 1:ny, 1:nz), 321), &
+                            [nz, ny, nx], [dz, dy, dx], [oz, oy, ox], (t - 1)*dt)
+#else
                         call output_array(snapp(1:nx, 1:ny, 1:nz), tidy(dir_working)//'/shot_' &
                             //num2str(sgmtr%id) &
                             //'_reconstructed_wavefield_p_' &
                             //num2str(l)//'.bin', store=321)
+#endif
                     end if
 
                     l = l - 1

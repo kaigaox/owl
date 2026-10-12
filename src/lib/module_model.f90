@@ -1,5 +1,5 @@
 !
-! © 2025. Triad National Security, LLC. All rights reserved.
+! © 2025-2026. Triad National Security, LLC. All rights reserved.
 !
 ! This program was produced under U.S. Government contract 89233218CNA000001
 ! for Los Alamos National Laboratory (LANL), which is operated by
@@ -21,6 +21,9 @@ module mod_model
 
     use libflit
     use mod_parameters
+#ifdef _use_hdf5_io_
+    use hdf5, only: hid_t
+#endif
 
     implicit none
 
@@ -198,6 +201,34 @@ contains
 #ifdef _dim2_
 
     !
+    !> A model parameter from file_w: a medium parameter, or the source parameters mt and stf
+    !> (nc_mt x ns). With HDF5, file_w is an HDF5 file that holds it as the dataset /<name> (e.g., /vp),
+    !> with the axes (z, x) as in the binary model files; without HDF5, a binary model file
+    !
+    subroutine input_model_array(w, file_w, name)
+
+        real, dimension(:, :), intent(inout) :: w
+        character(len=*), intent(in) :: file_w, name
+
+#ifdef _use_hdf5_io_
+        integer(hid_t) :: fid
+        real, allocatable, dimension(:, :) :: h
+
+        call fh5_open(tidy(file_w), fid, 'r')
+        call fh5_read(fid, '/'//tidy(name), h)
+        call fh5_close(fid)
+        call assert(all(shape(h) == shape(w)), ' <input_model_array> Error: /'//tidy(name)//' in ' &
+            //tidy(file_w)//' is '//num2str(size(h, 1))//' x '//num2str(size(h, 2))//', expected '//num2str(size(w, 1))//' x '//num2str(size(w, 2))//'. ')
+        w = h
+#else
+        call assert(file_exists(file_w), ' <input_model_array> Error: the file of '//tidy(name)//', ' &
+            //tidy(file_w)//', does not exist. ')
+        call input_array(w, file_w)
+#endif
+
+    end subroutine
+
+    !
     !> Get model or source parameters from meta arrays by name
     !
     function get_model(name, default_value) result(v)
@@ -267,7 +298,7 @@ contains
 
                 ! If read in or assign const value
                 if (present(file_w) .and. file_w /= '') then
-                    call input_array(w, file_w)
+                    call input_model_array(w, file_w, name)
                 else
                     if (present(const)) then
                         w = const
@@ -290,14 +321,14 @@ contains
                         ! If it is necessary to resample
 
                         call alloc_array(wt, [1, nz0, 1, nx0])
-                        call input_array(wt, file_w)
+                        call input_model_array(wt, file_w, name)
                         w = interp(wt, [nz0, nx0], [dz0, dx0], [oz0, ox0], &
                             [nz, nx], [dz, dx], [oz, ox], ['linear', 'linear'])
                         deallocate (wt)
 
                     else
                         ! If resampling is not required
-                        call input_array(w, file_w)
+                        call input_model_array(w, file_w, name)
 
                     end if
 
@@ -331,10 +362,15 @@ contains
         end if
 
         if (resume_from_iter > 1 .and. update_this_model) then
+#ifdef _use_hdf5_io_
+            file_update = tidy(dir_working)//'/iteration_'// &
+                num2str(resume_from_iter - 1)//'/model/updated_'//tidy(name)//'.h5'
+#else
             file_update = tidy(dir_working)//'/iteration_'// &
                 num2str(resume_from_iter - 1)//'/model/updated_'//tidy(name)//'.bin'
+#endif
             if (file_exists(file_update)) then
-                call input_array(w, file_update)
+                call input_model_array(w, file_update, name)
             else
                 if (rankid == 0) then
                     call warn(' Error: Updated model '//tidy(name)//' not found. Exiting. ')
@@ -349,6 +385,44 @@ contains
 
 
 #ifdef _dim3_
+
+    !
+    !> A model parameter from file_w: a medium parameter, or the source parameters mt and stf
+    !> (nc_mt x ns x 1). With HDF5, file_w is an HDF5 file that holds it as the dataset /<name> (e.g.,
+    !> /vp), with the axes (z, y, x) as in the binary model files, or for mt and stf also as a 2D
+    !> dataset nc_mt x ns; without HDF5, a binary model file
+    !
+    subroutine input_model_array(w, file_w, name)
+
+        real, dimension(:, :, :), intent(inout) :: w
+        character(len=*), intent(in) :: file_w, name
+
+#ifdef _use_hdf5_io_
+        integer(hid_t) :: fid
+        real, allocatable, dimension(:, :, :) :: h
+        real, allocatable, dimension(:, :) :: h2
+        integer :: nd
+
+        call fh5_open(tidy(file_w), fid, 'r')
+        call fh5_ndim(fid, '/'//tidy(name), nd)
+        if (nd == 2 .and. size(w, 3) == 1) then
+            ! A 2D array (mt, stf) stored without the trailing axis of length 1
+            call fh5_read(fid, '/'//tidy(name), h2)
+            h = reshape(h2, [size(h2, 1), size(h2, 2), 1])
+        else
+            call fh5_read(fid, '/'//tidy(name), h)
+        end if
+        call fh5_close(fid)
+        call assert(all(shape(h) == shape(w)), ' <input_model_array> Error: /'//tidy(name)//' in ' &
+            //tidy(file_w)//' is '//num2str(size(h, 1))//' x '//num2str(size(h, 2))//' x '//num2str(size(h, 3))//', expected '//num2str(size(w, 1))//' x '//num2str(size(w, 2))//' x '//num2str(size(w, 3))//'. ')
+        w = h
+#else
+        call assert(file_exists(file_w), ' <input_model_array> Error: the file of '//tidy(name)//', ' &
+            //tidy(file_w)//', does not exist. ')
+        call input_array(w, file_w)
+#endif
+
+    end subroutine
 
     function get_model(name, default_value) result(v)
 
@@ -418,14 +492,14 @@ contains
 
                     ! If read in or assign const value
                     if (present(file_w) .and. file_w /= '') then
-                        call input_array(w, file_w)
+                        call input_model_array(w, file_w, name)
                     else
                         if (present(const)) then
                             w = const
                         end if
                         if (file_w == '') then
                             if (rankid == 0) then
-                                call warn(' Warning: Moodel '//tidy(name)//' is empty. ')
+                                call warn(' Warning: Model '//tidy(name)//' is empty. ')
                             end if
                         end if
                     end if
@@ -442,7 +516,7 @@ contains
                             ! If it is necessary to resample
 
                             call alloc_array(wt, [1, nz0, 1, ny0, 1, nx0])
-                            call input_array(wt, file_w)
+                            call input_model_array(wt, file_w, name)
                             w = interp(wt, [nz0, ny0, nx0], [dz0, dy0, dx0], [oz0, oy0, ox0], &
                                 [nz, ny, nx], [dz, dy, dx], [oz, oy, ox], &
                                 ['linear', 'linear', 'linear'])
@@ -450,7 +524,7 @@ contains
 
                         else
                             ! If resampling is not required
-                            call input_array(w, file_w)
+                            call input_model_array(w, file_w, name)
 
                         end if
 
@@ -484,10 +558,15 @@ contains
             end if
 
             if (resume_from_iter > 1 .and. update_this_model) then
+#ifdef _use_hdf5_io_
+                file_update = tidy(dir_working)//'/iteration_'// &
+                    num2str(resume_from_iter - 1)//'/model/updated_'//tidy(name)//'.h5'
+#else
                 file_update = tidy(dir_working)//'/iteration_'// &
                     num2str(resume_from_iter - 1)//'/model/updated_'//tidy(name)//'.bin'
+#endif
                 if (file_exists(file_update)) then
-                    call input_array(w, file_update)
+                    call input_model_array(w, file_update, name)
                 else
                     if (rankid == 0) then
                         call warn(' Error: Updated parameter model '//tidy(name)//' not found. Exiting. ')

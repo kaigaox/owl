@@ -24,6 +24,9 @@ submodule(elastic_tti_2d) elastic_tti_2d_fwi_gradient
     use elastic_tti_2d_boundary_saving
     use elastic_tti_2d_wavefield
     use mod_anisotropy
+#ifdef _use_hdf5_io_
+    use mod_utility, only: output_snapshot_hdf5, output_snapshot_curvilinear_hdf5
+#endif
 
     implicit none
 
@@ -234,39 +237,63 @@ contains
                             end do
                             !$omp end parallel do
 
-                            open(3, file=tidy(dir_snapshot)//'/shot_' &
+#ifdef _use_hdf5_io_
+                            call output_snapshot_curvilinear_hdf5(tidy(dir_working)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_curvilinear_' &
+                                //num2str(l)//'.h5', &
+                                [((i - 1)*dx + ox, i = -pml + 1, nx + pml)], &
+                                transpose(zz_i(-pml + 1:nx + pml, 1:nz + pml)), &
+                                transpose(snapvx(-pml + 1:nx + pml, 1:nz + pml)), &
+                                transpose(snapvz(-pml + 1:nx + pml, 1:nz + pml)), &
+                                (t - 1)*dt)
+#else
+                            open(3, file=tidy(dir_working)//'/shot_' &
                                 //num2str(sgmtr%id) &
                                 //'_reconstructed_wavefield_x_' &
                                 //num2str(l)//'.txt')
                             do i = -pml + 1, nx + pml
                                 do j = 1, nz + pml
-                                    write(3, *) (i - 1)*dx, zz_i(i, j), snapvx(i, j)
+                                    write(3, *) (i - 1)*dx + ox, zz_i(i, j), snapvx(i, j)
                                 end do
                             end do
                             close(3)
 
-                            open(3, file=tidy(dir_snapshot)//'/shot_' &
+                            open(3, file=tidy(dir_working)//'/shot_' &
                                 //num2str(sgmtr%id) &
                                 //'_reconstructed_wavefield_z_' &
                                 //num2str(l)//'.txt')
                             do i = -pml + 1, nx + pml
                                 do j = 1, nz + pml
-                                    write(3, *) (i - 1)*dx, zz_i(i, j), snapvz(i, j)
+                                    write(3, *) (i - 1)*dx + ox, zz_i(i, j), snapvz(i, j)
                                 end do
                             end do
                             close(3)
+#endif
 
                             call map_irregular_to_regular(snapvx, this, [1, this%nx, 1, this%nz])
                             call map_irregular_to_regular(snapvz, this, [1, this%nx, 1, this%nz])
 
-                            call output_array(snapvx, tidy(dir_snapshot)//'/shot_' &
+#ifdef _use_hdf5_io_
+                            call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_' &
+                                //num2str(l)//'.h5', 'vx', transpose(snapvx), &
+                                [this%nz, 1, this%nx], [this%dz, 1.0, dx], [-topo_max, 0.0, ox], (t - 1)*dt)
+                            call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_' &
+                                //num2str(l)//'.h5', 'vz', transpose(snapvz), append=.true.)
+#else
+                            call output_array(snapvx, tidy(dir_working)//'/shot_' &
                                 //num2str(sgmtr%id) &
                                 //'_reconstructed_wavefield_x_' &
                                 //num2str(l)//'.bin', transp=.true.)
-                            call output_array(snapvz, tidy(dir_snapshot)//'/shot_' &
+                            call output_array(snapvz, tidy(dir_working)//'/shot_' &
                                 //num2str(sgmtr%id) &
                                 //'_reconstructed_wavefield_z_' &
                                 //num2str(l)//'.bin', transp=.true.)
+#endif
 
                         else
 
@@ -278,14 +305,26 @@ contains
                                 end do
                             end do
 
-                            call output_array(snapvx(1:nx, 1:nz), tidy(dir_snapshot)//'/shot_' &
+#ifdef _use_hdf5_io_
+                            call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_' &
+                                //num2str(l)//'.h5', 'vx', transpose(snapvx(1:nx, 1:nz)), &
+                                [nz, 1, nx], [dz, 1.0, dx], [oz, 0.0, ox], (t - 1)*dt)
+                            call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_' &
+                                //num2str(l)//'.h5', 'vz', transpose(snapvz(1:nx, 1:nz)), append=.true.)
+#else
+                            call output_array(snapvx(1:nx, 1:nz), tidy(dir_working)//'/shot_' &
                                 //num2str(sgmtr%id) &
                                 //'_reconstructed_wavefield_x_' &
                                 //num2str(l)//'.bin', transp=.true.)
-                            call output_array(snapvz(1:nx, 1:nz), tidy(dir_snapshot)//'/shot_' &
+                            call output_array(snapvz(1:nx, 1:nz), tidy(dir_working)//'/shot_' &
                                 //num2str(sgmtr%id) &
                                 //'_reconstructed_wavefield_z_' &
                                 //num2str(l)//'.bin', transp=.true.)
+#endif
 
                         end if
 

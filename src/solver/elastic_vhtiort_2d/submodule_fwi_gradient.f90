@@ -23,6 +23,9 @@ submodule(elastic_vhtiort_2d) elastic_vhtiort_2d_fwi_gradient
     use elastic_vhtiort_2d_vars
     use elastic_vhtiort_2d_boundary_saving
     use elastic_vhtiort_2d_wavefield
+#ifdef _use_hdf5_io_
+    use mod_utility, only: output_snapshot_hdf5
+#endif
 
     implicit none
 
@@ -39,6 +42,9 @@ contains
         real :: amp
         type(grid2) :: grd
         integer :: i, j, t
+#ifdef _use_hdf5_io_
+        real, allocatable, dimension(:, :) :: regvx, regvz
+#endif
 
         call prepare_modeling(this)
         call compute_cfspml_damping_coef
@@ -171,6 +177,35 @@ contains
                 if (np /= 0 .and. l >= 1) then
                     if (t - 1 == nint(snaps(l)/dt)) then
 
+#ifdef _use_hdf5_io_
+                        !$omp parallel do private(i, j) collapse(2)
+                        do j = -pml + 1, nz + pml
+                            do i = 1, nx
+                                snapvx(i, j) = 0.5*sum(vx(i:i + 1, j))
+                                snapvz(i, j) = 0.5*sum(vz(i, j:j + 1))
+                            end do
+                        end do
+                        !$omp end parallel do
+
+                        ! On the regular mesh, as the forward snapshots: under a free surface, copies mapped from the
+                        ! depth-varying mesh
+                        regvx = snapvx
+                        regvz = snapvz
+                        if (yn_free_surface) then
+                            call map_irregular_to_regular(regvx, this, [1, this%nx, 1, this%nz])
+                            call map_irregular_to_regular(regvz, this, [1, this%nx, 1, this%nz])
+                        end if
+
+                        call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                            //num2str(sgmtr%id) &
+                            //'_reconstructed_wavefield_' &
+                            //num2str(l)//'.h5', 'vx', transpose(regvx(1:this%nx, 1:this%nz)), &
+                            [this%nz, 1, this%nx], [dz, 1.0, dx], [oz, 0.0, ox], (t - 1)*dt)
+                        call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                            //num2str(sgmtr%id) &
+                            //'_reconstructed_wavefield_' &
+                            //num2str(l)//'.h5', 'vz', transpose(regvz(1:this%nx, 1:this%nz)), append=.true.)
+#else
                         !$omp parallel do private(i, j) collapse(2)
                         do j = 1, nz
                             do i = 1, nx
@@ -188,6 +223,7 @@ contains
                             //num2str(sgmtr%id) &
                             //'_reconstructed_wavefield_z_' &
                             //num2str(l)//'.bin', transp=.true.)
+#endif
 
                         l = l - 1
                     end if

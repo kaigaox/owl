@@ -148,13 +148,13 @@ contains
             do i = iter - 1, max(iter - nstep_lbfgs, 1), -1
 
                 ! model at iter = i+1 is the updated model at iter = i
-                call input_array(xii, dir_iter_model(i)//'/updated_'//tidy(parameter_name)//'.bin')
+                call input_updated_model(xii, i, parameter_name)
 
                 ! model at iter = i is the updated model at iter = i-1
                 if (i - 1 == 0) then
                     call input_array(xi, dir_iter_model(i - 1)//'/'//tidy(parameter_name)//'.bin')
                 else
-                    call input_array(xi, dir_iter_model(i - 1)//'/updated_'//tidy(parameter_name)//'.bin')
+                    call input_updated_model(xi, i - 1, parameter_name)
                 end if
 
                 ! grad at iter = i+1
@@ -184,13 +184,13 @@ contains
             ! Initialize search direction
 
             ! model at iter = iter is the updated model at iter = iter-1
-            call input_array(xii, dir_iter_model(iter - 1)//'/updated_'//tidy(parameter_name)//'.bin')
+            call input_updated_model(xii, iter - 1, parameter_name)
 
             ! model at iter = iter-1 is the updated model at iter = iter - 2
             if (iter - 2 == 0) then
                 call input_array(xi, dir_iter_model(iter - 2)//'/'//tidy(parameter_name)//'.bin')
             else
-                call input_array(xi, dir_iter_model(iter - 2)//'/updated_'//tidy(parameter_name)//'.bin')
+                call input_updated_model(xi, iter - 2, parameter_name)
             end if
 
             ! grad at iter = iter
@@ -217,13 +217,13 @@ contains
             do i = max(iter - nstep_lbfgs, 1), iter - 1
 
                 ! model at iter = i+1 is the updated model at iter = i
-                call input_array(xii, dir_iter_model(i)//'/updated_'//tidy(parameter_name)//'.bin')
+                call input_updated_model(xii, i, parameter_name)
 
                 ! model at iter = i is the updated model at iter = i - 1
                 if (i - 1 == 0) then
                     call input_array(xi, dir_iter_model(i - 1)//'/'//tidy(parameter_name)//'.bin')
                 else
-                    call input_array(xi, dir_iter_model(i - 1)//'/updated_'//tidy(parameter_name)//'.bin')
+                    call input_updated_model(xi, i - 1, parameter_name)
                 end if
 
                 ! grad at iter = i+1
@@ -266,12 +266,47 @@ contains
         if (to_lower(search_method) == 'l-bfgs' .and. rankid == 0) then
             call make_directory(dir_iter_model(0))
             do i = 1, nmodel
+#ifdef _use_hdf5_io_
+                ! As the input models: one file per parameter, the dataset /<name> with the axes (z, x) or
+                ! (z, y, x) and the model grid as attributes (none for mt and stf, nc_mt x ns)
+                if (any(model_name(i) == ['mt ', 'stf'])) then
+                    call output_model_hdf5(dir_iter_model(0)//'/updated_'//tidy(model_name(i))//'.h5', &
+                        tidy(model_name(i)), model_m(i)%array)
+                else
+#ifdef _dim2_
+                    call output_model_hdf5(dir_iter_model(0)//'/updated_'//tidy(model_name(i))//'.h5', &
+                        tidy(model_name(i)), model_m(i)%array, [nz, 1, nx], [dz, 1.0, dx], [oz, 0.0, ox])
+#endif
+#ifdef _dim3_
+                    call output_model_hdf5(dir_iter_model(0)//'/updated_'//tidy(model_name(i))//'.h5', &
+                        tidy(model_name(i)), model_m(i)%array, [nz, ny, nx], [dz, dy, dx], [oz, oy, ox])
+#endif
+                end if
+#else
                 call output_array(model_m(i)%array, &
                     dir_iter_model(0)//'/updated_'//tidy(model_name(i))//'.bin')
+#endif
             end do
         end if
 
     end subroutine init_lbfgs
+
+    !
+    !> The updated model of a parameter at iteration it, as a vector
+    !
+    subroutine input_updated_model(x, it, name)
+
+        real, dimension(:), intent(inout) :: x
+        integer, intent(in) :: it
+        character(len=*), intent(in) :: name
+
+#ifdef _use_hdf5_io_
+        call input_vector_hdf5(x, dir_iter_model(it)//'/updated_'//tidy(name)//'.h5', name)
+#else
+        call input_array(x, dir_iter_model(it)//'/updated_'//tidy(name)//'.bin')
+#endif
+
+    end subroutine input_updated_model
 
     !
     !> Calculate search directions

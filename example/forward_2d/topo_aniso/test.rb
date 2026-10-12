@@ -37,9 +37,9 @@ for f in f0
                 system "echo 'measure_receiver_depth_from_surface = y' >> tmp.rb "
                 system "mpirun -np 1 owl_modeling2 tmp.rb "
 
-                system "./compare_seis \
-                    dir1=./data_specfem_f0=#{f}_sz=#{z} dir2=./data_#{m}_refine=#{r}_f0=#{f}_sz=#{z} \
-                    label1='specfem_f0=#{f}_sz=#{z}' label2='#{m}_refine=#{r}_f0=#{f}_sz=#{z}' "
+                #system "./compare_seis \
+                #    dir1=./data_specfem_f0=#{f}_sz=#{z} dir2=./data_#{m}_refine=#{r}_f0=#{f}_sz=#{z} \
+                #    label1='specfem_f0=#{f}_sz=#{z}' label2='#{m}_refine=#{r}_f0=#{f}_sz=#{z}' "
 
                 clip = [c[h], c[h]]
 

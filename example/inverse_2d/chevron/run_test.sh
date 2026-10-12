@@ -44,7 +44,7 @@ mpirun -np 200 owl_fwi2 $p
 # Stage b
 p=param.rb
 cp -rp param_fwi.rb $p
-echo 'file_vp = test_a/iteration_30/model/updated_vp.bin ' >> $p
+echo 'file_vp = test_a/iteration_50/model/updated_vp.bin ' >> $p
 echo 'process_record = freq_filt ' >> $p
 echo 'process_synthetic = freq_filt ' >> $p
 echo 'process_grad = mask, smooth, mask' >> $p

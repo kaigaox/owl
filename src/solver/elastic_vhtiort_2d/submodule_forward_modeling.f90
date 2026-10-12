@@ -1,5 +1,5 @@
 !
-! © 2025. Triad National Security, LLC. All rights reserved.
+! © 2025-2026. Triad National Security, LLC. All rights reserved.
 !
 ! This program was produced under U.S. Government contract 89233218CNA000001
 ! for Los Alamos National Laboratory (LANL), which is operated by
@@ -24,6 +24,9 @@ submodule(elastic_vhtiort_2d) elastic_vhtiort_2d_forward_modeling
     use elastic_vhtiort_2d_boundary_saving
     use elastic_vhtiort_2d_wavefield
     use elastic_vhtiort_2d_cfspml
+#ifdef _use_hdf5_io_
+    use mod_utility, only: output_snapshot_hdf5
+#endif
 
     implicit none
 
@@ -134,6 +137,17 @@ contains
                         call map_irregular_to_regular(snapvx, this, [1, this%nx, 1, this%nz])
                         call map_irregular_to_regular(snapvz, this, [1, this%nx, 1, this%nz])
 
+#ifdef _use_hdf5_io_
+                        call output_snapshot_hdf5(tidy(dir_snapshot)//'/shot_' &
+                            //num2str(sgmtr%id) &
+                            //'_forward_wavefield_' &
+                            //num2str(l)//'.h5', 'vx', transpose(snapvx), &
+                            [this%nz, 1, this%nx], [dz, 1.0, dx], [oz, 0.0, ox], (t - 1)*dt)
+                        call output_snapshot_hdf5(tidy(dir_snapshot)//'/shot_' &
+                            //num2str(sgmtr%id) &
+                            //'_forward_wavefield_' &
+                            //num2str(l)//'.h5', 'vz', transpose(snapvz), append=.true.)
+#else
                         call output_array(snapvx, tidy(dir_snapshot)//'/shot_' &
                             //num2str(sgmtr%id) &
                             //'_forward_wavefield_x_' &
@@ -142,6 +156,7 @@ contains
                             //num2str(sgmtr%id) &
                             //'_forward_wavefield_z_' &
                             //num2str(l)//'.bin', transp=.true.)
+#endif
 
                     else
 
@@ -154,6 +169,17 @@ contains
                         end do
                         !$omp end parallel do
 
+#ifdef _use_hdf5_io_
+                        call output_snapshot_hdf5(tidy(dir_snapshot)//'/shot_' &
+                            //num2str(sgmtr%id) &
+                            //'_forward_wavefield_' &
+                            //num2str(l)//'.h5', 'vx', transpose(snapvx(1:nx, 1:nz)), &
+                            [this%nz, 1, this%nx], [dz, 1.0, dx], [oz, 0.0, ox], (t - 1)*dt)
+                        call output_snapshot_hdf5(tidy(dir_snapshot)//'/shot_' &
+                            //num2str(sgmtr%id) &
+                            //'_forward_wavefield_' &
+                            //num2str(l)//'.h5', 'vz', transpose(snapvz(1:nx, 1:nz)), append=.true.)
+#else
                         call output_array(snapvx(1:nx, 1:nz), tidy(dir_snapshot)//'/shot_' &
                             //num2str(sgmtr%id) &
                             //'_forward_wavefield_x_' &
@@ -162,6 +188,7 @@ contains
                             //num2str(sgmtr%id) &
                             //'_forward_wavefield_z_' &
                             //num2str(l)//'.bin', transp=.true.)
+#endif
 
                     end if
 

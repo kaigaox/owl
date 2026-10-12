@@ -201,7 +201,7 @@ contains
 #endif
 #ifdef _dim3_
         real, allocatable, dimension(:) :: topox, topoy
-        real, allocatable, dimension(:, :) :: topoz, topo_ixiy
+        real, allocatable, dimension(:, :) :: topo_ixiy
 #endif
         real, allocatable, dimension(:) :: stp, rtp
         real :: topo_max
@@ -334,7 +334,8 @@ contains
 #ifdef _dim2_
 
                 topo = load(file_topo, n, 2, ascii=.true.)
-                topox = regspace(0.0, dx, (nx + 2*pml + 1)*dx) - (pml + 1)*dx
+                ! Grid points i = -pml, ..., nx + pml + 1 at x = (i - 1)*dx + ox, as in the 2D solver
+                topox = regspace(0.0, dx, (nx + 2*pml + 1)*dx) - (pml + 1)*dx + ox
                 call alloc_array(topo_i, [-pml, nx + pml + 1], source=ginterp(topo(:, 1), topo(:, 2), topox, method=topo_interp))
 
                 if (measure_source_depth_from_surface) then
@@ -358,13 +359,11 @@ contains
 #ifdef _dim3_
 
                 topo = load(file_topo, n, 3, ascii=.true.)
-                topox = meshgrid([nx + 2*pml + 2, ny + 2*pml + 2]*2 + [1, 1], [dx, dy]/2.0, [-(pml + 1)*dx + ox, -(pml + 1)*dy + oy], dim=1)
-                topoy = meshgrid([nx + 2*pml + 2, ny + 2*pml + 2]*2 + [1, 1], [dx, dy]/2.0, [-(pml + 1)*dx + ox, -(pml + 1)*dy + oy], dim=2)
-                topoz = reshape(ginterp(topo(:, 1), topo(:, 2), topo(:, 3), topox, topoy), [nx + 2*pml + 2, ny + 2*pml + 2]*2 + [1, 1])
-                topo_ixiy = topoz(2:size(topoz, 1):2, 2:size(topoz, 2):2)
-
+                ! Topography at the integer grid points i = -pml, ..., nx + pml + 1 at x = (i - 1)*dx + ox
+                ! (likewise in y), as in prepare_modeling of the 3D elastic TTI solver
                 topox = meshgrid([nx + 2*pml + 2, ny + 2*pml + 2], [dx, dy], [-(pml + 1)*dx + ox, -(pml + 1)*dy + oy], dim=1)
                 topoy = meshgrid([nx + 2*pml + 2, ny + 2*pml + 2], [dx, dy], [-(pml + 1)*dx + ox, -(pml + 1)*dy + oy], dim=2)
+                topo_ixiy = reshape(ginterp(topo(:, 1), topo(:, 2), topo(:, 3), topox, topoy), [nx + 2*pml + 2, ny + 2*pml + 2])
 
                 if (measure_source_depth_from_surface) then
                     src_below_free_surface = trues(gmtr(i)%ns)
@@ -680,6 +679,29 @@ contains
                 end if
                 this%srcr(i)%interp_hz = kaiser_sinc_kernel(dis)
 
+            else
+
+                ! A source outside the model is not injected. It gets a zero amplitude, an empty source time
+                ! function, in-range grid nodes and zero interpolation weights, so that every solver that
+                ! loops over all sources (injection, moment-tensor gradient, GPU drivers) reads defined
+                ! values that contribute nothing; prepare_stf leaves invalid sources untouched
+                this%srcr(i)%amp = 0.0
+                this%srcr(i)%nt = 0
+                this%srcr(i)%hnt = 0
+                this%srcr(i)%gx = 1
+                this%srcr(i)%gy = 1
+                this%srcr(i)%gz = 1
+                this%srcr(i)%hx = 1
+                this%srcr(i)%hy = 1
+                this%srcr(i)%hz = 1
+                call alloc_array(this%srcr(i)%interp_ix, [-nkw, nkw])
+                call alloc_array(this%srcr(i)%interp_iy, [-nkw, nkw])
+                call alloc_array(this%srcr(i)%interp_iz, [-nkw, nkw])
+                call alloc_array(this%srcr(i)%interp_hx, [-nkw, nkw])
+                call alloc_array(this%srcr(i)%interp_hy, [-nkw, nkw])
+                call alloc_array(this%srcr(i)%interp_hz, [-nkw, nkw])
+                call alloc_array(this%srcr(i)%stf, [1, 0])
+
             end if
 
         end do
@@ -726,7 +748,7 @@ contains
 
                 if (depth_varying_dz) then
                     igx = ifelse(size(this%z_h, 1) == 1, 1, this%recr(i)%gx)
-                    igy = ifelse(size(this%z_h, 2) == 1, 1, this%recr(i)%gz)
+                    igy = ifelse(size(this%z_h, 2) == 1, 1, this%recr(i)%gy)
                     ! Note that here minloc will always treat lower bound of array as 1, not true lower bound
                     this%recr(i)%hz = minloc(abs(this%recr(i)%z  + ifelse(this%recr(i)%z == 0, float_small, 0.0) &
                         - this%oz - this%z_h(igx, igy, :)), dim=1) + lbound(this%z_h, dim=3) - 1
@@ -779,6 +801,12 @@ contains
                     dis = (this%recr(i)%z - this%oz + 0.5*this%dz)/this%dz - (this%recr(i)%hz - 1)
                 end if
                 this%recr(i)%interp_hz = kaiser_sinc_kernel(dis)
+
+            else
+
+                ! A receiver outside the model gets no grid nodes and no interpolation weights; a zero weight
+                ! makes the solvers, which select the receivers by their weights, skip it
+                this%recr(i)%weight = 0.0
 
             end if
 

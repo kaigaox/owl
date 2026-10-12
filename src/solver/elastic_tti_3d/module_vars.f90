@@ -460,10 +460,12 @@ contains
         real :: tmpmin, tmpmax
         real, allocatable, dimension(:, :, :) :: mdispersion, mstability
         real, allocatable, dimension(:, :) :: topo
+        real, allocatable, dimension(:) :: gridx, gridy
         real, allocatable, dimension(:) :: stp, rtp
         real :: dz0
         real :: wmin, wmax
         real :: stable_eta_max, rayleigh_vs
+        real, allocatable, dimension(:, :) :: surface_vs
         integer :: nbeg, nend
 
         nx = this%nx
@@ -623,9 +625,10 @@ contains
 
         end select
 
-        ! Get PML Vp at boundary nodes
+        ! Get PML Vp at boundary nodes, and the S-wave velocities at the surface for the Rayleigh wavelength,
+        ! averaged after the loops (a sum inside them would race between the threads)
         pmlvp = -float_large
-        rayleigh_vs = 0.0
+        call alloc_array(surface_vs, [1, nx, 1, ny])
         select case (aniso_param)
 
             case ('iso')
@@ -638,7 +641,7 @@ contains
                                 pmlvp = max(pmlvp, vp(i, j, k))
                             end if
                             if (k == 1) then
-                                rayleigh_vs = rayleigh_vs + vs(i, j, k)
+                                surface_vs(i, j) = vs(i, j, k)
                             end if
                         end do
                     end do
@@ -655,7 +658,7 @@ contains
                                 pmlvp = max(pmlvp, vp(i, j, k)*sqrt(1.0 + 2*tieps(i, j, k)))
                             end if
                             if (k == 1) then
-                                rayleigh_vs = rayleigh_vs + vs(i, j, k)
+                                surface_vs(i, j) = vs(i, j, k)
                             end if
                         end do
                     end do
@@ -672,7 +675,7 @@ contains
                                 pmlvp = max(pmlvp, vp(i, j, k))
                             end if
                             if (k == 1) then
-                                rayleigh_vs = rayleigh_vs + vs(i, j, k)
+                                surface_vs(i, j) = vs(i, j, k)
                             end if
                         end do
                     end do
@@ -681,7 +684,7 @@ contains
 
             case ('cij')
 
-                !$omp parallel do private(i, j, k) collapse(3) reduction(max:pmlvp)
+                !$omp parallel do private(i, j, k, tmpmax, tmpmin) collapse(3) reduction(max:pmlvp)
                 do k = 1, nz
                     do j = 1, ny
                         do i = 1, nx
@@ -695,7 +698,7 @@ contains
                                     rho(i, j, k), 36, 36, tmpmax, tmpmin)
                                 pmlvp = max(pmlvp, tmpmax)
                                 if (k == 1) then
-                                    rayleigh_vs = rayleigh_vs + tmpmin
+                                    surface_vs(i, j) = tmpmin
                                 end if
                             end if
                         end do
@@ -705,7 +708,7 @@ contains
 
         end select
 
-        rayleigh_vs = rayleigh_vs/(nx*ny)
+        rayleigh_vs = sum(surface_vs)/(nx*ny)
 
         ! Pad models with PML
         call pad_array(c11, [pml + 1, pml + 1, pml + 1, pml + 1, pml + 1, pml + 1])
@@ -755,27 +758,37 @@ contains
                 ntp = count_nonempty_lines(this%file_topo)
                 topo = load(this%file_topo, ntp, 3, ascii=.true.)
 
-                topox = meshgrid([nx + 2*pml + 2, ny + 2*pml + 2]*2 + [1, 1], [dx, dy]/2.0, [-(pml + 1)*dx + ox, -(pml + 1)*dy + oy], dim=1)
-                topoy = meshgrid([nx + 2*pml + 2, ny + 2*pml + 2]*2 + [1, 1], [dx, dy]/2.0, [-(pml + 1)*dx + ox, -(pml + 1)*dy + oy], dim=2)
+                ! Topography at the integer grid points i = -pml, ..., nx + pml + 1, j = -pml, ..., ny + pml + 1,
+                ! at x = (i - 1)*dx + ox and y = (j - 1)*dy + oy, from the given x-y-elevation points
+                topox = meshgrid([nx + 2*pml + 2, ny + 2*pml + 2], [dx, dy], [-(pml + 1)*dx + ox, -(pml + 1)*dy + oy], dim=1)
+                topoy = meshgrid([nx + 2*pml + 2, ny + 2*pml + 2], [dx, dy], [-(pml + 1)*dx + ox, -(pml + 1)*dy + oy], dim=2)
+                topo_ixiy = reshape(ginterp(topo(:, 1), topo(:, 2), topo(:, 3), topox, topoy), [nx + 2*pml + 2, ny + 2*pml + 2])
 
-                ! Interpolate given xy-elev to obtain topography
-                topoz = reshape(ginterp(topo(:, 1), topo(:, 2), topo(:, 3), topox, topoy), [nx + 2*pml + 2, ny + 2*pml + 2]*2 + [1, 1])
-
-                ! Get integer and half spatial points topography by selecting
-                topo_ixiy = topoz(2:size(topoz, 1):2, 2:size(topoz, 2):2)
-                topo_hxiy = topoz(1:size(topoz, 1) - 1:2, 2:size(topoz, 2):2)
-                topo_ixhy = topoz(2:size(topoz, 1):2, 1:size(topoz, 2) - 1:2)
-                topo_hxhy = topoz(1:size(topoz, 1) - 1:2, 1:size(topoz, 2) - 1:2)
+                ! Topography at the half grid points, stored at index i (j) half a cell before the integer
+                ! grid point, at x - dx/2 (y - dy/2): interpolated from the integer grid points along x and
+                ! along y with topo_interp, as in the 2D solver
+                gridx = regspace(0.0, dx, (nx + 2*pml + 1)*dx) - (pml + 1)*dx + ox
+                gridy = regspace(0.0, dy, (ny + 2*pml + 1)*dy) - (pml + 1)*dy + oy
+                do j = -pml, ny + pml + 1
+                    topo_hxiy(:, j) = ginterp(gridx, topo_ixiy(:, j), gridx - 0.5*dx, method=this%topo_interp)
+                end do
+                do i = -pml, nx + pml + 1
+                    topo_ixhy(i, :) = ginterp(gridy, topo_ixiy(i, :), gridy - 0.5*dy, method=this%topo_interp)
+                    topo_hxhy(i, :) = ginterp(gridy, topo_hxiy(i, :), gridy - 0.5*dy, method=this%topo_interp)
+                end do
 
                 ! Compute slopes in x and y directions
-                slopex_ixiy = deriv(topo_ixiy, dim=1)/dx
-                slopex_hxiy = deriv(topo_hxiy, dim=1)/dx
-                slopex_ixhy = deriv(topo_ixhy, dim=1)/dx
-                slopex_hxhy = deriv(topo_hxhy, dim=1)/dx
-                slopey_ixiy = deriv(topo_ixiy, dim=2)/dy
-                slopey_hxiy = deriv(topo_hxiy, dim=2)/dy
-                slopey_ixhy = deriv(topo_ixhy, dim=2)/dy
-                slopey_hxhy = deriv(topo_hxhy, dim=2)/dy
+                ! The slopes enter the metric (tpaz, tpbz) and the free-surface condition; compute them with the
+                ! 16th-order centered Taylor difference (FLIT's deriv, accuracy = 8) whatever the order of the
+                ! wavefield derivatives
+                slopex_ixiy = deriv(topo_ixiy, dim=1, method='center', accuracy=8)/dx
+                slopex_hxiy = deriv(topo_hxiy, dim=1, method='center', accuracy=8)/dx
+                slopex_ixhy = deriv(topo_ixhy, dim=1, method='center', accuracy=8)/dx
+                slopex_hxhy = deriv(topo_hxhy, dim=1, method='center', accuracy=8)/dx
+                slopey_ixiy = deriv(topo_ixiy, dim=2, method='center', accuracy=8)/dy
+                slopey_hxiy = deriv(topo_hxiy, dim=2, method='center', accuracy=8)/dy
+                slopey_ixhy = deriv(topo_ixhy, dim=2, method='center', accuracy=8)/dy
+                slopey_hxhy = deriv(topo_hxhy, dim=2, method='center', accuracy=8)/dy
 
                 if (rankid_group == 0) then
                     call warn(date_time_compact()//' Number of topography control points = '//num2str(ntp))
@@ -875,11 +888,14 @@ contains
             call alloc_array(zz_i, [1, nx, 1, ny, 1, nz], pad=pml + 1)
             call alloc_array(zz_h, [1, nx, 1, ny, 1, nz], pad=pml + 1)
 
+            ! A row at eta is at the depth of the solver's mapping, z = -topo + eta*(topo + depth_max)/eta_max
+            ! (tpcz = eta_max/(topo + depth_max)); the last row may lie below depth_max, since eta_zz_i(nz) may
+            ! exceed eta_max by part of a step
             !$omp parallel do private(i, j, k) collapse(2)
             do j = -pml, ny + pml + 1
                 do i = -pml, nx + pml + 1
 
-                    zz_i(i, j, 1:nz) = rescale(eta_zz_i(1:nz), [-topo_ixiy(i, j), depth_max])
+                    zz_i(i, j, 1:nz) = -topo_ixiy(i, j) + eta_zz_i(1:nz)*(topo_ixiy(i, j) + depth_max)/eta_max
 
                 end do
             end do
@@ -1074,7 +1090,7 @@ contains
                     minv = float_huge
                     maxv = -float_huge
 
-                    !$omp parallel do private(i, j, k) collapse(3) reduction(min:minv) reduction(max:maxv)
+                    !$omp parallel do private(i, j, k, tmpmax, tmpmin) collapse(3) reduction(min:minv) reduction(max:maxv)
                     do k = nz1, nz2
                         do j = ny1, ny2
                             do i = nx1, nx2
@@ -1851,5 +1867,6 @@ contains
         !$omp end parallel do
 
     end subroutine compute_topography_coefs
+
 
 end module

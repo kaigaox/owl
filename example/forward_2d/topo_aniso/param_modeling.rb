@@ -18,6 +18,9 @@ verbose = y
 
 f0_factor = 1.2
 
+yn_free_surface = y
+file_topo = ./ftopo.txt
+
 which_medium = elastic-tti
 anisotropy_type = thomsen
 model_name = vp, vs, epsilon, delta, theta, rho

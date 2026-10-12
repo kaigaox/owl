@@ -1,5 +1,5 @@
 !
-! © 2025. Triad National Security, LLC. All rights reserved.
+! © 2025-2026. Triad National Security, LLC. All rights reserved.
 !
 ! This program was produced under U.S. Government contract 89233218CNA000001
 ! for Los Alamos National Laboratory (LANL), which is operated by
@@ -24,8 +24,29 @@ module mod_utility
     use mod_model
     use mod_source_receiver
     use mod_grid
+#ifdef _use_hdf5_io_
+    use hdf5, only: hid_t
+#endif
 
     implicit none
+
+#ifdef _use_hdf5_io_
+    interface output_snapshot_hdf5
+        module procedure :: output_snapshot_hdf5_2d
+        module procedure :: output_snapshot_hdf5_3d
+    end interface output_snapshot_hdf5
+
+    ! Model files (e.g., the updated model of a parameter in an inversion) take the same writer, without a time
+    interface output_model_hdf5
+        module procedure :: output_snapshot_hdf5_2d
+        module procedure :: output_snapshot_hdf5_3d
+    end interface output_model_hdf5
+
+    interface output_snapshot_curvilinear_hdf5
+        module procedure :: output_snapshot_curvilinear_hdf5_2d
+        module procedure :: output_snapshot_curvilinear_hdf5_3d
+    end interface output_snapshot_curvilinear_hdf5
+#endif
 
 contains
 
@@ -508,5 +529,175 @@ contains
         end if
 
     end subroutine
+
+#ifdef _use_hdf5_io_
+
+    !
+    ! A component of a wavefield snapshot to an HDF5 file, as the dataset /<name> with the axes in the
+    ! order of the binary snapshots, (z, y, x). Without append, the file is created, with the grid
+    ! n = [nz, ny, nx], d = [dz, dy, dx], o = [oz, oy, ox] (in the order of the axes) and the snapshot
+    ! time as attributes of the root group; with append = .true., the component is added to the
+    ! existing file of the same snapshot (e.g., vy and vz after vx). Without n, d and o (a snapshot on a
+    ! curvilinear mesh, with the coordinates as datasets), the new file has the snapshot time only
+    !
+    subroutine output_snapshot_hdf5_2d(file, name, w, n, d, o, time, append)
+
+        character(len=*), intent(in) :: file, name
+        real, dimension(:, :), intent(in) :: w
+        integer, dimension(1:3), intent(in), optional :: n
+        real, dimension(1:3), intent(in), optional :: d, o
+        real, intent(in), optional :: time
+        logical, intent(in), optional :: append
+
+        integer(hid_t) :: fid
+
+        call open_snapshot_hdf5(file, fid, n, d, o, time, append)
+        call fh5_write(fid, '/'//tidy(name), w)
+        call fh5_close(fid)
+
+    end subroutine output_snapshot_hdf5_2d
+
+    subroutine output_snapshot_hdf5_3d(file, name, w, n, d, o, time, append)
+
+        character(len=*), intent(in) :: file, name
+        real, dimension(:, :, :), intent(in) :: w
+        integer, dimension(1:3), intent(in), optional :: n
+        real, dimension(1:3), intent(in), optional :: d, o
+        real, intent(in), optional :: time
+        logical, intent(in), optional :: append
+
+        integer(hid_t) :: fid
+
+        call open_snapshot_hdf5(file, fid, n, d, o, time, append)
+        call fh5_write(fid, '/'//tidy(name), w)
+        call fh5_close(fid)
+
+    end subroutine output_snapshot_hdf5_3d
+
+    subroutine open_snapshot_hdf5(file, fid, n, d, o, time, append)
+
+        character(len=*), intent(in) :: file
+        integer(hid_t), intent(out) :: fid
+        integer, dimension(1:3), intent(in), optional :: n
+        real, dimension(1:3), intent(in), optional :: d, o
+        real, intent(in), optional :: time
+        logical, intent(in), optional :: append
+
+        if (present(append)) then
+            if (append) then
+                call fh5_open(tidy(file), fid, 'a')
+                return
+            end if
+        end if
+
+        call fh5_open(tidy(file), fid, 'w')
+        call fh5_write_attr(fid, '/', 'xyz unit', 'm')
+        call fh5_write_attr(fid, '/', 'time unit', 's')
+
+        ! The grid is absent for a snapshot on a curvilinear mesh, whose coordinates are datasets
+        if (present(n) .and. present(d) .and. present(o)) then
+            call fh5_write_attr(fid, '/', 'nz', n(1))
+            call fh5_write_attr(fid, '/', 'ny', n(2))
+            call fh5_write_attr(fid, '/', 'nx', n(3))
+            call fh5_write_attr(fid, '/', 'dz', d(1))
+            call fh5_write_attr(fid, '/', 'dy', d(2))
+            call fh5_write_attr(fid, '/', 'dx', d(3))
+            call fh5_write_attr(fid, '/', 'oz', o(1))
+            call fh5_write_attr(fid, '/', 'oy', o(2))
+            call fh5_write_attr(fid, '/', 'ox', o(3))
+        end if
+        if (present(time)) then
+            call fh5_write_attr(fid, '/', 'snapshot_time', time)
+        end if
+
+    end subroutine open_snapshot_hdf5
+
+    !
+    ! Snapshot on a curvilinear mesh (e.g., under a free surface with topography) to an HDF5 file: the
+    ! coordinates and the particle velocities at the mesh points as the datasets x, z, vx, vz, with the
+    ! axes (z, x), and the snapshot time. x holds the x coordinates of the mesh columns; z, vx and vz
+    ! have the axes (z, x)
+    !
+    subroutine output_snapshot_curvilinear_hdf5_2d(file, x, z, vx, vz, time)
+
+        character(len=*), intent(in) :: file
+        real, dimension(:), intent(in) :: x
+        real, dimension(:, :), intent(in) :: z, vx, vz
+        real, intent(in) :: time
+
+        call output_snapshot_hdf5(file, 'x', spread(x, 1, size(z, 1)), time=time)
+        call output_snapshot_hdf5(file, 'z', z, append=.true.)
+        call output_snapshot_hdf5(file, 'vx', vx, append=.true.)
+        call output_snapshot_hdf5(file, 'vz', vz, append=.true.)
+
+    end subroutine output_snapshot_curvilinear_hdf5_2d
+
+    !
+    ! The 3D version: the datasets x, y, z, vx, vy, vz with the axes (z, y, x); x and y hold the x and
+    ! y coordinates of the mesh columns
+    !
+    subroutine output_snapshot_curvilinear_hdf5_3d(file, x, y, z, vx, vy, vz, time)
+
+        character(len=*), intent(in) :: file
+        real, dimension(:), intent(in) :: x, y
+        real, dimension(:, :, :), intent(in) :: z, vx, vy, vz
+        real, intent(in) :: time
+
+        real, allocatable, dimension(:, :, :) :: c
+        integer :: i, j
+
+        allocate (c(1:size(z, 1), 1:size(z, 2), 1:size(z, 3)))
+        do i = 1, size(z, 3)
+            c(:, :, i) = x(i)
+        end do
+        call output_snapshot_hdf5(file, 'x', c, time=time)
+        do j = 1, size(z, 2)
+            c(:, j, :) = y(j)
+        end do
+        call output_snapshot_hdf5(file, 'y', c, append=.true.)
+        call output_snapshot_hdf5(file, 'z', z, append=.true.)
+        call output_snapshot_hdf5(file, 'vx', vx, append=.true.)
+        call output_snapshot_hdf5(file, 'vy', vy, append=.true.)
+        call output_snapshot_hdf5(file, 'vz', vz, append=.true.)
+
+    end subroutine output_snapshot_curvilinear_hdf5_3d
+
+    !
+    ! The dataset /<name> of an HDF5 file as a vector, in the order of its elements (the order of the
+    ! binary files), e.g., an updated model of an inversion (rank 2 or 3)
+    !
+    subroutine input_vector_hdf5(x, file, name)
+
+        real, dimension(:), intent(inout) :: x
+        character(len=*), intent(in) :: file, name
+
+        integer(hid_t) :: fid
+        integer :: nd
+        real, allocatable, dimension(:) :: h
+        real, allocatable, dimension(:, :) :: h2
+        real, allocatable, dimension(:, :, :) :: h3
+
+        call fh5_open(tidy(file), fid, 'r')
+        call fh5_ndim(fid, '/'//tidy(name), nd)
+        call assert(nd >= 1 .and. nd <= 3, ' <input_vector_hdf5> Error: /'//tidy(name)//' in '//tidy(file) &
+            //' has rank '//num2str(nd)//'. ')
+        select case (nd)
+            case (1)
+                call fh5_read(fid, '/'//tidy(name), h)
+            case (2)
+                call fh5_read(fid, '/'//tidy(name), h2)
+                h = flatten(h2)
+            case (3)
+                call fh5_read(fid, '/'//tidy(name), h3)
+                h = flatten(h3)
+        end select
+        call fh5_close(fid)
+        call assert(size(h) == size(x), ' <input_vector_hdf5> Error: /'//tidy(name)//' in '//tidy(file) &
+            //' has '//num2str(size(h))//' elements, expected '//num2str(size(x))//'. ')
+        x = h
+
+    end subroutine input_vector_hdf5
+
+#endif
 
 end module

@@ -22,6 +22,9 @@ submodule(elastic_vhtiort_3d) elastic_vhtiort_3d_fwi_gradient
     use elastic_vhtiort_3d_vars
     use elastic_vhtiort_3d_boundary_saving
     use elastic_vhtiort_3d_wavefield
+#ifdef _use_hdf5_io_
+    use mod_utility, only: output_snapshot_hdf5
+#endif
 
     implicit none
 
@@ -39,6 +42,9 @@ contains
         real :: amp
         type(grid3) :: grd
         integer :: i, j, k, t
+#ifdef _use_hdf5_io_
+        real, allocatable, dimension(:, :, :) :: regvx, regvy, regvz
+#endif
         real, allocatable, dimension(:, :, :) :: grad
         real :: wmin1, wmin2, wmin3
         real :: wmax1, wmax2, wmax3
@@ -242,6 +248,31 @@ contains
 
                         ! Output
                         if (rankid_group == 0) then
+#ifdef _use_hdf5_io_
+                            ! On the regular mesh, as the forward snapshots: under a free surface, copies mapped from the
+                            ! depth-varying mesh
+                            regvx = snapvx
+                            regvy = snapvy
+                            regvz = snapvz
+                            if (yn_free_surface) then
+                                call map_irregular_to_regular(regvx, this, [1, this%nx, 1, this%ny, 1, this%nz])
+                                call map_irregular_to_regular(regvy, this, [1, this%nx, 1, this%ny, 1, this%nz])
+                                call map_irregular_to_regular(regvz, this, [1, this%nx, 1, this%ny, 1, this%nz])
+                            end if
+                            call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_' &
+                                //num2str(l)//'.h5', 'vx', permute(regvx(1:this%nx, 1:this%ny, 1:this%nz), 321), &
+                                [this%nz, this%ny, this%nx], [dz, dy, dx], [oz, oy, ox], (t - 1)*dt)
+                            call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_' &
+                                //num2str(l)//'.h5', 'vy', permute(regvy(1:this%nx, 1:this%ny, 1:this%nz), 321), append=.true.)
+                            call output_snapshot_hdf5(tidy(dir_working)//'/shot_' &
+                                //num2str(sgmtr%id) &
+                                //'_reconstructed_wavefield_' &
+                                //num2str(l)//'.h5', 'vz', permute(regvz(1:this%nx, 1:this%ny, 1:this%nz), 321), append=.true.)
+#else
                             call output_array(snapvx(1:nx, 1:ny, 1:nz), tidy(dir_working)//'/shot_' &
                                 //num2str(sgmtr%id) &
                                 //'_reconstructed_wavefield_x_' &
@@ -254,6 +285,7 @@ contains
                                 //num2str(sgmtr%id) &
                                 //'_reconstructed_wavefield_z_' &
                                 //num2str(l)//'.bin', store=321)
+#endif
                         end if
 
                         l = l - 1

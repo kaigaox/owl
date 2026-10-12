@@ -372,13 +372,16 @@ contains
 
                 call alloc_array(topo_i, [-pml, nx + pml + 1], &
                     source=ginterp(topo(:, 1), topo(:, 2), topox, method=this%topo_interp))
+                ! The slopes enter the metric (tpaz) and the free-surface condition; compute them with the
+                ! 16th-order centered Taylor difference (FLIT's deriv, accuracy = 8) whatever the order of the
+                ! wavefield derivatives
                 call alloc_array(slopex_i, [-pml, nx + pml + 1], &
-                    source=deriv(topo_i, method='center')/dx)
+                    source=deriv(topo_i, method='center', accuracy=8)/dx)
 
                 call alloc_array(topo_h, [-pml, nx + pml + 1], &
                     source=ginterp(topox, topo_i, topox - 0.5*dx, method=this%topo_interp))
                 call alloc_array(slopex_h, [-pml, nx + pml + 1], &
-                    source=deriv(topo_h, method='center')/dx)
+                    source=deriv(topo_h, method='center', accuracy=8)/dx)
 
                 call warn(date_time_compact()//' Number of topography control points = '//num2str(ntp))
                 call warn(date_time_compact()//' Max elevation above z=0 = '//num2str(maxval(topo_i), '(es)'))
@@ -462,11 +465,13 @@ contains
             call alloc_array(zz_i, [1, nx, 1, nz], pad=pml + 1)
             call alloc_array(zz_h, [1, nx, 1, nz], pad=pml + 1)
 
-            ! Then set the mesh above the bottom PML interface
+            ! Then set the mesh above the bottom PML interface. A row at eta is at the depth of the solver's
+            ! mapping, z = -topo + eta*(topo + depth_max)/eta_max (tpcz = eta_max/(topo + depth_max)); the
+            ! last row may lie below depth_max, since eta_zz_i(nz) may exceed eta_max by part of a step
             !$omp parallel do private(i, j)
             do j = -pml, nx + pml + 1
 
-                zz_i(j, 1:nz) = rescale(eta_zz_i(1:nz), [-topo_i(j), depth_max])
+                zz_i(j, 1:nz) = -topo_i(j) + eta_zz_i(1:nz)*(topo_i(j) + depth_max)/eta_max
 
             end do
             !$omp end parallel do
@@ -586,7 +591,7 @@ contains
                 case ('cij')
                     minv = float_huge
                     maxv = -float_huge
-                    !$omp parallel do private(i, j) collapse(2) reduction(min:minv) reduction(max:maxv)
+                    !$omp parallel do private(i, j, tmpmax, tmpmin) collapse(2) reduction(min:minv) reduction(max:maxv)
                     do j = 1, nz
                         do i = 1, nx
 
@@ -640,7 +645,10 @@ contains
 
             ! If measure from the free surface then + topo (here, topo has already been sign-corrected)
             ! e.g., sz = 400, topo = 100, then real depth = 500
-            topox = regspace(0.0, dx, (nx + 2*pml + 1)*dx) - (pml + 1)*dx
+            ! The surface zz_i(:, 1) is given at the grid points i = -pml, ..., nx + pml + 1 at
+            ! x = (i - 1)*dx + ox (ox is the start of the shot's modeling range); topox is also used for
+            ! the receiver rotation
+            topox = regspace(0.0, dx, (nx + 2*pml + 1)*dx) - (pml + 1)*dx + ox
 
             stp = ginterp(topox, zz_i(:, 1), sgmtr%srcr(:)%x, this%topo_interp)
             rtp = ginterp(topox, zz_i(:, 1), sgmtr%recr(:)%x, this%topo_interp)
@@ -891,5 +899,6 @@ contains
         end if
 
     end subroutine
+
 
 end module
