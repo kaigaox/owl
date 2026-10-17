@@ -1,17 +1,14 @@
 
 import matplotlib.pyplot as plt
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.ticker import FormatStrFormatter
 from python.libpy_io import *
 from python.libpy_utility import *
-from matplotlib.ticker import (MultipleLocator)
+from matplotlib.ticker import MultipleLocator
 
 set_font()
 
-n1 = 30
+n1 = 50
 n2 = 50
-n3 = 70
+n3 = 100
 n4 = 100
 
 sa = read_array('./test_a/data_misfit.txt', (n1, 3), ascii=True)
@@ -19,7 +16,7 @@ sb = read_array('./test_b/data_misfit.txt', (n2, 3), ascii=True)
 sc = read_array('./test_c/data_misfit.txt', (n3, 3), ascii=True)
 sd = read_array('./test_d/data_misfit.txt', (n4, 3), ascii=True)
 
-fig, ax = plt.subplots(1, 1, figsize=(10, 3))
+fig, ax = plt.subplots(1, 1, figsize=(11, 3))
 
 ax.plot(sa[:n1 + 1, 0], sa[:n1 + 1, 2], 'v', linestyle='-', linewidth=1, markersize=3, color='k', label='Stage 1: 1-2-5-6 Hz')
 ax.plot(n1 + sb[:n2 + 1, 0], sb[:n2 + 1, 2], 'v', linestyle='-', linewidth=1, markersize=3, color='b', label='Stage 2: 1-2-7-8 Hz')

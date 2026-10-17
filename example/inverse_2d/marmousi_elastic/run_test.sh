@@ -39,7 +39,7 @@ cp -rp param_fwi.rb $p
 echo 'misfit_type = dtw-vector ' >> $p
 echo 'dir_working = test_dtw_vector ' >> $p
 echo 'adj_nt = 1000 ' >> $p
-echo 'dtw_form = amplitude' >> $p
+echo 'dtw_form = amp' >> $p
 echo 'tlag_max = 1.0' >> $p
 echo 'dtw_smooth_median = 1' >> $p
 echo 'dtw_smooth_gaussian = 3' >> $p

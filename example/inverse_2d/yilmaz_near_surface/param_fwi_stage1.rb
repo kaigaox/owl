@@ -54,5 +54,6 @@ dtw_smooth_gaussian = 2
 dtw_loss = l0.5
 adj_nt = 1001
 tlag_max = 0.15
+niter_max = 75
 dir_working = test_s1
 

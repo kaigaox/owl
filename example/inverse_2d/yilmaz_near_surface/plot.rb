@@ -18,7 +18,7 @@ system "x_showgraph -in=fatt/data_misfit.txt -ftype=ascii -ptype=2 -size1=4 -siz
 
 
 # fwi
-iters = [26, 30, 40]
+iters = [75, 25, 60]
 
 dopts = " -every=2 -wigglecolor=b,r -label1='Time (s)' -wigglewidth=0.75,0.75 -tick1d=0.1 -mtick1=1 -label2='Trace Number' -tick2d=4 -clip=0.05 -scaling=0.25,1 -size1=2.5 -size2=5 "
 

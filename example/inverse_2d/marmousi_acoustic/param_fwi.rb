@@ -25,5 +25,3 @@ min_vp = 1000
 max_vp = 5000
 
 yn_energy_precond = y
-
-niter_max = 200

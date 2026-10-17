@@ -45,8 +45,6 @@ step_max_eta = 0.01
 
 yn_energy_precond = y
 
-niter_max = 100
-
 verbose = y
 
 

@@ -48,4 +48,5 @@ misfit_type = corr
 step_max_vs = 25
 grad_smooth_x = 1:5, 50:2.5
 grad_smooth_z = 1:0.5, 50:0.5
+niter_max = 25
 dir_working = test_s2

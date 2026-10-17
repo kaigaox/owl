@@ -5,7 +5,7 @@ program test
 
     implicit none
 
-    real, allocatable, dimension(:, :) :: w, ww, vp, vs, eps, del, the
+    real, allocatable, dimension(:, :) :: w, ww, vp, vs, eps, eta, the
     integer :: nsf, i, j
 
     call make_directory('./model')
@@ -21,7 +21,7 @@ program test
     vs = rescale(vp, [680.0, 2700.0])
 
     eps = rescale(median_filt(1.0/vp), [0.2, 0.3])
-    del = rescale(median_filt(1.0/vs), [0.1, 0.15])
+    eta = rescale(median_filt(1.0/vs), [0.1, 0.15])
 
     the = zeros_like(vp)
     the = gauss_filt(deriv(vp, dim=1), [1.0, 1.0])
@@ -33,7 +33,7 @@ program test
     call output_array(vs, './model/vs.bin')
 
     call output_array(eps, './model/eps.bin')
-    call output_array(del, './model/del.bin')
+    call output_array(eta, './model/eta.bin')
     call output_array(the, './model/the.bin')
 
     ww = vp
@@ -47,6 +47,18 @@ program test
     vs = 1.0/gauss_filt(1.0/vs, [8.0, 8.0])
     vs(1:nsf, :) = ww(1:nsf, :)
     call output_array(vs, './model/vs_init.bin')
+
+    ww = eps
+    eps = gauss_filt(eps, [8.0, 8.0])
+    eps = gauss_filt(eps, [8.0, 8.0])
+    eps(1:nsf, :) = ww(1:nsf, :)
+    call output_array(eps, './model/eps_init.bin')
+
+    ww = eta
+    eta = gauss_filt(eta, [8.0, 8.0])
+    eta = gauss_filt(eta, [8.0, 8.0])
+    eta(1:nsf, :) = ww(1:nsf, :)
+    call output_array(eta, './model/eta_init.bin')
 
     w = 1.0
     w(1:nsf, :) = 0.0

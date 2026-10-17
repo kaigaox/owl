@@ -41,8 +41,6 @@ grad_mask = model/mask.bin
 
 dir_record = data
 
-niter_max = 200
-
 yn_energy_precond = y
 
 verbose = y

@@ -11,7 +11,7 @@ system "x_showmatrix -in=model/vp_init.bin #{opts} -out=./plot/vp_init.pdf #{pco
 
 
 l = 0
-for m in ['waveform', 'adaptive', 'adaptive_local', 'adaptive_spacetime', 'dtw_amp', 'dtw_phase']
+for m in ['waveform', 'adaptive', 'adaptive_local', 'adaptive_spacetime', 'dtw_phase', 'dtw_amp']
 
     system "x_showmatrix -in=test_#{m}/iteration_100/model/updated_vp.bin #{opts} -out=./plot/vp_#{m}.pdf #{pcolor} &"
 

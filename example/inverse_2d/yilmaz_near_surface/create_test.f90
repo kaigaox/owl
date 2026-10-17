@@ -59,7 +59,7 @@ program test
         call output_array(t, './pick/shot_'//num2str(i)//'_traveltime_p.bin')
         open(3, file='./pick/time_'//num2str(i)//'.txt')
         do j = 1, 48
-            write(3, *) t((i - 1)*48 + j), j - 1
+            write(3, *) t(j), j - 1
         end do
         print *, i
     end do

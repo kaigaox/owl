@@ -68,7 +68,7 @@ mpirun -np 80 owl_fwi2 $p
 p=param_dtw_amp.rb
 cp -rp param_fwi.rb $p
 echo 'misfit_type = dtw ' >> $p
-echo 'dir_working = test_dtw ' >> $p
+echo 'dir_working = test_dtw_amp ' >> $p
 echo 'adj_nt = 501' >> $p
 echo 'dtw_form = amp' >> $p
 echo 'tlag_max = 0.5' >> $p

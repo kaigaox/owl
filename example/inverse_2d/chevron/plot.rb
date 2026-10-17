@@ -6,7 +6,7 @@ system "x_showgraph -in=geometry/chevron_wavelet.txt -ftype=ascii -ptype=2 -x2be
 
 
 shot = 1000
-iters = [30, 50, 70, 100]
+iters = [50, 50, 100, 100]
 labels = ['a', 'b', 'c', 'd']
 clips = [0.2e-6, 0.5e-6, 1e-6, 1.5e-6]
 

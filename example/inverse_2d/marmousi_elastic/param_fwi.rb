@@ -32,7 +32,5 @@ step_max_vs = 100
 
 yn_energy_precond = y
 
-niter_max = 100
-
 verbose = y
 

@@ -37,6 +37,7 @@ echo 'dtw_loss = l0.5 ' >> $p
 echo 'dtw_form = phase' >> $p
 echo 'dp_freq_filt_freqs = 1.0, 2.0, 5.0, 6.0' >> $p
 echo 'dp_freq_filt_coefs = 0.0, 1.0, 1.0, 0.0' >> $p
+echo 'niter_max = 50' >> $p
 echo 'dir_working = test_a ' >> $p
 mpirun -np 200 owl_fwi2 $p
 
@@ -54,6 +55,7 @@ echo 'grad_mask = model/mask.bin' >> $p
 echo 'misfit_type = corr'  >> $p
 echo 'dp_freq_filt_freqs = 1.0, 2.0, 7.0, 8.0' >> $p
 echo 'dp_freq_filt_coefs = 0.0, 1.0, 1.0, 0.0' >> $p
+echo 'niter_max = 50' >> $p
 echo 'dir_working = test_b ' >> $p
 mpirun -np 200 owl_fwi2 $p
 
