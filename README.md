@@ -1,7 +1,7 @@
 # Description
 **OWL: Open Wave Library for seismic wave modeling and full-waveform inversion**
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20668968.svg)](https://doi.org/10.5281/zenodo.20668968)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23307328.svg)](https://doi.org/10.5281/zenodo.23307328)
 
 `OWL` is an open-source package for seismic wave simulation and full-waveform inversion (FWI) in the following types of media:
 
@@ -109,8 +109,8 @@ We welcome feedback, bug reports, and ideas for improving `OWL`.
 
 If you use this package in your research and find it useful, please cite it as:
 
-* Kai Gao, 2025, OWL: Open Wave Library for seismic wave modeling and full-waveform inversion in acoustic and elastic media, URL: [github.com/lanl/owl](https://github.com/lanl/owl)
-* Kai Gao, Jackson W. Saftner, Ting Chen, Ryan T. Modrak, 2026, OWL: Open Wave Library for seismic wave modeling and full-waveform inversion in acoustic and elastic media, _under review_ with GJI.
+* Kai Gao, 2025, OWL: Open Wave Library for seismic wave modeling and full-waveform inversion in acoustic and elastic media, _GitHub Repository_, URL: [github.com/lanl/owl](https://github.com/lanl/owl).
+* Kai Gao, Jackson W. Saftner, Ting Chen, Ryan T. Modrak, 2026, OWL: Open Wave Library for seismic wave modeling and full-waveform inversion in acoustic and elastic media, _Geophysical Journal International_.
 
 # Examples
 Below are some of the examples included in the paper under review (LA-UR-26-20025).
